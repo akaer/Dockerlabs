@@ -1,0 +1,174 @@
+services:
+
+  mailcatcher:
+    image: axllent/mailpit
+    restart: always
+    container_name: mailcatcher
+    hostname: mailpit
+    environment:
+      TZ: "Europe/Berlin"
+      MP_DATA_FILE: "/data/mailpit.db"
+    ports:
+      - 8000:8025
+      - 1025:1025
+    volumes:
+      - mailpit_data:/data
+    networks:
+      qslab:
+        ipv4_address: ${DOCKER_MAILCATCHER_IP}
+
+  db:
+    image: mssql-2022
+    build: db
+    restart: always
+    container_name: db
+    hostname: db
+    shm_size: 2g
+    environment:
+      TZ: Europe/Berlin
+      DATABASE_MEMORYLIMITMB: 8196
+    volumes:
+        - db_backup:/backups
+        - db_data:/var/opt/mssql
+    ports:
+        - "11433:1433"
+    networks:
+      qslab:
+        ipv4_address: ${DOCKER_DB_IP}
+
+  dc:
+    image: dockurr/windows
+    restart: always
+    container_name: dc
+    hostname: host-dc
+    environment:
+      VERSION: "2025"
+      TZ: "Europe/Berlin"
+      DISK_SIZE: "64G"
+      CPU_CORES: "4"
+      RAM_SIZE: "8G"
+      LANGUAGE: "English"
+      REGION: "de-DE"
+      KEYBOARD: "de-DE"
+      USERNAME: "${LOCAL_ADMIN_ACCOUNT}"
+      PASSWORD: "${LOCAL_ADMIN_PASSWORD}"
+      HEIGHT: "1080"
+      WIDTH: "1920"
+      DEBUG: "Y"
+      ARGUMENTS: "-netdev vde,id=net0,sock=/tmp/vde_switch.sock -device virtio-net-pci,netdev=net0,mac=${DC_NETWORK_MAC},romfile="
+    devices:
+      - /dev/kvm
+    cap_add:
+      - NET_ADMIN
+    ports:
+      - 8002:8006
+      - 4002:3389/tcp
+      - 4002:3389/udp
+      - 5001:1880/tcp
+      - 5002:2880/tcp
+    volumes:
+      - /tmp/vde_switch.sock:/tmp/vde_switch.sock
+      - dc_data:/storage
+      - ./shared:/shared
+      - ./scripts:/oem
+      - ./ISOs/26100.1742.240906-0331.ge_release_svc_refresh_SERVER_EVAL_x64FRE_en-us.iso:/boot.iso
+    stop_grace_period: 2m
+    networks:
+      qslab:
+        ipv4_address: ${DOCKER_DC_IP}
+
+  web:
+    image: dockurr/windows
+    restart: always
+    container_name: web
+    hostname: host-web
+    environment:
+      VERSION: "2025"
+      TZ: "Europe/Berlin"
+      DISK_SIZE: "64G"
+      CPU_CORES: "4"
+      RAM_SIZE: "8G"
+      LANGUAGE: "English"
+      REGION: "de-DE"
+      KEYBOARD: "de-DE"
+      USERNAME: "${LOCAL_ADMIN_ACCOUNT}"
+      PASSWORD: "${LOCAL_ADMIN_PASSWORD}"
+      HEIGHT: "1080"
+      WIDTH: "1920"
+      DEBUG: "Y"
+      ARGUMENTS: "-netdev vde,id=net0,sock=/tmp/vde_switch.sock -device virtio-net-pci,netdev=net0,mac=${WEB_NETWORK_MAC},romfile="
+    devices:
+      - /dev/kvm
+    cap_add:
+      - NET_ADMIN
+    ports:
+      - 8003:8006
+      - 4003:3389/tcp
+      - 4003:3389/udp
+      - 5003:1880/tcp
+      - 5004:2880/tcp
+    volumes:
+      - /tmp/vde_switch.sock:/tmp/vde_switch.sock
+      - web_data:/storage
+      - ./shared:/shared
+      - ./scripts:/oem
+      - ./ISOs/26100.1742.240906-0331.ge_release_svc_refresh_SERVER_EVAL_x64FRE_en-us.iso:/boot.iso
+    stop_grace_period: 2m
+    networks:
+      qslab:
+        ipv4_address: ${DOCKER_WEB_IP}
+
+  client:
+    image: dockurr/windows
+    restart: always
+    container_name: client
+    hostname: host-client
+    environment:
+      VERSION: "11e"
+      TZ: "Europe/Berlin"
+      DISK_SIZE: "64G"
+      CPU_CORES: "4"
+      RAM_SIZE: "8G"
+      LANGUAGE: "English"
+      REGION: "de-DE"
+      KEYBOARD: "de-DE"
+      USERNAME: "${LOCAL_ADMIN_ACCOUNT}"
+      PASSWORD: "${LOCAL_ADMIN_PASSWORD}"
+      HEIGHT: "1080"
+      WIDTH: "1920"
+      DEBUG: "Y"
+      ARGUMENTS: "-netdev vde,id=net0,sock=/tmp/vde_switch.sock -device virtio-net-pci,netdev=net0,mac=${CLIENT_NETWORK_MAC},romfile="
+    devices:
+      - /dev/kvm
+    cap_add:
+      - NET_ADMIN
+    ports:
+      - 8001:8006
+      - 4001:3389/tcp
+      - 4001:3389/udp
+    volumes:
+      - /tmp/vde_switch.sock:/tmp/vde_switch.sock
+      - client_data:/storage
+      - ./shared:/shared
+      - ./scripts:/oem
+      - ./ISOs/26200.6584.250915-1905.25h2_ge_release_svc_refresh_CLIENTENTERPRISEEVAL_OEMRET_x64FRE_en-us.iso:/boot.iso
+    stop_grace_period: 2m
+    networks:
+      qslab:
+        ipv4_address: ${DOCKER_CLIENT_IP}
+
+volumes:
+  db_backup:
+  db_data:
+  client_data:
+  dc_data:
+  web_data:
+  mailpit_data:
+
+networks:
+  qslab:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: ${DOCKER_SUBNET}
+          gateway: ${DOCKER_GATEWAY}
