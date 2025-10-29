@@ -24,7 +24,7 @@ sed -i -e "/=/ s|^|\$|g" \
        -e "/=/ s|$|'|g" \
        -e "/:/ s|:|-|g" \
        scripts/env.ps1
-unix2dos scripts/env.ps1
+unix2dos -m scripts/env.ps1
 
 docker compose --env-file env.demo up -d
 

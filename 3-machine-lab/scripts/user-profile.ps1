@@ -1,4 +1,4 @@
-Set-StrictMode -Version Latest
+﻿Set-StrictMode -Version Latest
 if ( $env:DEBUG -eq 'True' ) { Set-PSDebug -Trace 1 }
 $ErrorActionPreference = 'Stop'
 $InformationPreference = 'Continue'
