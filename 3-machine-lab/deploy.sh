@@ -16,7 +16,7 @@ helper/create_certificates.sh "$DOMAIN_NAME"
 
 sudo vde_switch -d -s /tmp/vde_switch.sock -t vde_tap0 -M /tmp/vde_mgmt.sock
 
-/usr/bin/cp -f env.demo scripts/env.ps1
+cp -f env.demo scripts/env.ps1
 
 # Convert docker compose env file to a sourceable file by PowerShell
 sed -i -e "/=/ s|^|\$|g" \
@@ -31,8 +31,11 @@ docker compose --env-file env.demo up -d
 # Start of silly Microsoft Windows workaround to reboot any of our VMs to stablelize the network configuration
 mapfile -t computernames < <(grep '_COMPUTERNAME=' "./env.demo" | cut -d'=' -f2)
 
-# Directory to watch for desired reboots
 WATCH_DIR="$(pwd)/shared/state"
+
+if [[ ! -d "$WATCH_DIR" ]]; then
+    mkdir -p "$WATCH_DIR"
+fi
 
 declare -A rebooted
 

@@ -58,26 +58,15 @@ Set-ItemProperty -Path $EdgePolicyPath -Name NewTabPageLocation -Value 'about:bl
 
 Write-Host '[+] Disable Windows Updates'
 Set-ItemProperty -Path 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate\AU' -Name NoAutoUpdate -Value 1
-& sc.exe config wuauserv start= disabled
-if ($LASTEXITCODE -ne 0) {
-        throw "sc failed with exit code $LASTEXITCODE"
-}
-
-& sc.exe stop wuauserv
-if ($LASTEXITCODE -ne 0) {
-        throw "sc failed with exit code $LASTEXITCODE"
-}
-
+Stop-Service -Name wuauserv -Force -ErrorAction Stop
+Set-Service -Name wuauserv -StartupType Disabled -ErrorAction Stop
 
 Write-Host '[+] Eject cd from drive'
 $sh = New-Object -ComObject 'Shell.Application'
 $sh.Namespace(17).Items() | Where-Object { $_.Type -eq 'CD Drive' } | foreach { $_.InvokeVerb('Eject') }
 
 Write-Host '[+] Enable file and printer sharing'
-& netsh advfirewall firewall set rule group='File and Printer Sharing' new enable=Yes
-if ($LASTEXITCODE -ne 0) {
-        throw "netsh failed with exit code $LASTEXITCODE"
-}
+Set-NetFirewallRule -DisplayGroup 'File and Printer Sharing' -Enabled True -Profile Any
 
 Write-Host '[+] Disable use simple file sharing'
 New-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Control\Lsa' -Name 'ForceGuest' -Value '0' -PropertyType 'DWord' -Force | Out-Null
@@ -98,19 +87,18 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 Write-Host '[+] Allow response to Ping'
-& netsh advfirewall firewall add rule name='ICMP Allow incoming V4 echo request' protocol=icmpv4:8,any dir=in action=allow
-if ($LASTEXITCODE -ne 0) {
-        throw "netsh failed with exit code $LASTEXITCODE"
-}
+New-NetFirewallRule -DisplayName 'ICMP Allow incoming V4 echo request' `
+                    -Protocol ICMPv4 `
+                    -IcmpType 8 `
+                    -Direction Inbound `
+                    -Action Allow `
+                    -Profile Any
 
 Write-Host '[+] Enable UAC'
 New-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System' -Name 'EnableLUA' -Value '1' -PropertyType 'DWord' -Force | Out-Null
 
 Write-Host '[+] Share c:\temp folder'
-& net share temp=c:\temp /Grant:Everyone,CHANGE
-if ($LASTEXITCODE -ne 0) {
-        throw "net failed with exit code $LASTEXITCODE"
-}
+New-SmbShare -Name 'temp' -Path 'C:\temp' -ChangeAccess 'Everyone'
 
 Write-Host '[+] Updating NuGet provider to a version higher than 2.8.5.201.'
 Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force | Out-Null
@@ -193,12 +181,6 @@ if (Test-Path "$TargetScript") {
     $shortcut.TargetPath = $SourceFilePath
     $shortcut.Arguments = "-NoProfile -ExecutionPolicy bypass -File $TargetScript"
     $shortcut.Save()
-}
-
-Write-Host '[+] Extend license'
-& slmgr.vbs /rearm
-if ($LASTEXITCODE -ne 0) {
-        throw "Scripting failed with exit code $LASTEXITCODE"
 }
 
 Write-Host '[+] Upgrade all installed packages'

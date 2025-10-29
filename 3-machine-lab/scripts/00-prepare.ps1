@@ -1,4 +1,5 @@
 #Requires -Version 5.1
+#Requires -RunAsAdministrator
 
 Set-StrictMode -Version Latest
 if ($env:DEBUG -eq 'True') { Set-PSDebug -Trace 1 }
