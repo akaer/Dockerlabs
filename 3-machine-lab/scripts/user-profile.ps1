@@ -1,8 +1,11 @@
-﻿Set-StrictMode -Version Latest
-if ( $env:DEBUG -eq 'True' ) { Set-PSDebug -Trace 1 }
+﻿#Requires -Version 5.1
+
+Set-StrictMode -Version Latest
+if ($env:DEBUG -eq 'True') { Set-PSDebug -Trace 1 }
+
 $ErrorActionPreference = 'Stop'
 $InformationPreference = 'Continue'
-$DebugPreference = 'SilentlyContinue' # Valid values are 'SilentlyContinue' -> Don't show any debug messages; Continue -> Show debug messages.
+$DebugPreference = 'SilentlyContinue'
 $ProgressPreference = 'SilentlyContinue'
 
 Write-Host '[+] Show menu in Explorer'

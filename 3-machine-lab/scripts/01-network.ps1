@@ -14,6 +14,14 @@ if (Test-Path $EnvFile) {
     . $EnvFile
 }
 
+function ConvertTo-PrefixLength {
+    param([string]$SubnetMask)
+
+    $octets = $SubnetMask.Split('.')
+    $binaryString = ($octets | ForEach-Object { [Convert]::ToString([int]$_, 2).PadLeft(8, '0') }) -join ''
+    return ($binaryString.ToCharArray() | Where-Object { $_ -eq '1' }).Count
+}
+
 function Set-NetworkAdapterConfiguration {
     param(
         [Parameter(Mandatory)]
@@ -42,10 +50,8 @@ function Set-NetworkAdapterConfiguration {
 
     Set-NetIPInterface -InterfaceAlias "$AdapterName" -AddressFamily IPv4 -DadTransmits 0
 
-    & netsh interface ip set address "$AdapterName" static $IPAddress $SubnetMask
-    if ($LASTEXITCODE -ne 0) {
-        throw "netsh failed with exit code $LASTEXITCODE"
-    }
+    Get-NetIPAddress -InterfaceAlias $AdapterName -AddressFamily IPv4 -ErrorAction SilentlyContinue | Remove-NetIPAddress -Confirm:$false
+    New-NetIPAddress -InterfaceAlias $AdapterName -IPAddress $IPAddress -PrefixLength (ConvertTo-PrefixLength $SubnetMask) -AddressFamily IPv4
 
     Start-Sleep -Seconds 5
 
@@ -54,11 +60,14 @@ function Set-NetworkAdapterConfiguration {
 
 }
 
-Write-Host '[+] Before network configuration'
-& ipconfig /all
-if ($LASTEXITCODE -ne 0) {
-    throw "ipconfig failed with exit code $LASTEXITCODE"
+$RebootFile = "\\host.lan\Data\state\${Env:ComputerName}_reboot.txt"
+Write-Host '[+] Remove reboot file'
+if (Test-Path "$RebootFile") {
+    Remove-Item "$RebootFile" -Force | Out-Null
 }
+
+Write-Host '[+] Before network configuration'
+Get-NetIPConfiguration -Detailed
 
 Write-Host '[+] Finding network adapters'
 $physicalAdapters = Get-NetAdapter -Physical
@@ -121,8 +130,5 @@ Write-Host "[+] Disable IPv6 for non-domain adapter"
 Disable-NetAdapterBinding -Name 'Docker' -ComponentID ms_tcpip6
 
 Write-Host '[+] After network configuration'
-& ipconfig /all
-if ($LASTEXITCODE -ne 0) {
-    throw "ipconfig failed with exit code $LASTEXITCODE"
-}
+Get-NetIPConfiguration -Detailed
 

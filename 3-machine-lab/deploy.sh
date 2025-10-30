@@ -34,7 +34,7 @@ mapfile -t computernames < <(grep '_COMPUTERNAME=' "./env.demo" | cut -d'=' -f2)
 WATCH_DIR="$(pwd)/shared/state"
 
 if [[ ! -d "$WATCH_DIR" ]]; then
-    mkdir -p "$WATCH_DIR"
+    sudo mkdir -p "$WATCH_DIR"
 fi
 
 declare -A rebooted
@@ -53,8 +53,6 @@ inotifywait -m -e create,moved_to "$WATCH_DIR" --format '%f' | while read filena
     for name in "${computernames[@]}"; do
         if [[ "$filename" == "${name}_reboot.txt" ]]; then
             echo "[+] $(date): Detected $filename - triggering restart for container: $name"
-
-            rm -f "$WATCH_DIR/$filename"
 
             docker restart "$name"
 

@@ -12,5 +12,5 @@ rm -f scripts/env.ps1
 rm -rf scripts/certs
 rm -f db/mssql.crt
 rm -f db/mssql.key
-rm -f shared/state/*
+sudo rm -f shared/state/*
 

@@ -13,15 +13,17 @@ if (Test-Path $EnvFile) {
     . $EnvFile
 }
 
+Write-Host '[+] Install root ca certificate'
 Import-Certificate `
     -FilePath "c:\OEM\certs\${DOMAIN_NAME}.ca.der" `
-    -CertStoreLocation Cert:\LocalMachine\Root
+    -CertStoreLocation Cert:\LocalMachine\Root | Out-Null
 
+Write-Host '[+] Install machine certificate'
 Import-PfxCertificate `
     -FilePath "c:\OEM\certs\${env:COMPUTERNAME}.${DOMAIN_NAME}.pfx" `
     -CertStoreLocation Cert:\LocalMachine\My `
     -Password $null `
-    -Exportable
+    -Exportable | Out-Null
 
 if ('web' -eq $env:COMPUTERNAME) {
     Write-Host '[+] Register HTTPS certificate'

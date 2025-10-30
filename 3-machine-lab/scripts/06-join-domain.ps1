@@ -72,7 +72,11 @@ if (-not $joined) {
     exit 1
 }
 
+# After domain join, sleep 30 seconds to settle thins a little bit
+Start-Sleep -Seconds 30
+
 Write-Host '[+] Allow domain users allow remote login'
+$ErrorActionPreference = 'Continue'
 $maxAttempts = 10
 $attemptCount = 0
 $success = $false
@@ -80,7 +84,6 @@ $success = $false
 while (-not $success -and $attemptCount -lt $maxAttempts) {
     $attemptCount++
     $result = & net localgroup 'Remote Desktop Users' 'Domain Users' /add 2>&1
-
     if ($LASTEXITCODE -eq 0 -or $result -match 'already a member') {
         $success = $true
         Write-Host 'Successfully added Domain Users to Remote Desktop Users'
@@ -91,6 +94,7 @@ while (-not $success -and $attemptCount -lt $maxAttempts) {
         throw "Unexpected error: $result"
     }
 }
+$ErrorActionPreference = 'Stop'
 
 Write-Host '[+] Deactivate auto logon'
 $regPath = 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon'

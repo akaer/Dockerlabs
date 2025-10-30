@@ -66,13 +66,13 @@ $sh = New-Object -ComObject 'Shell.Application'
 $sh.Namespace(17).Items() | Where-Object { $_.Type -eq 'CD Drive' } | foreach { $_.InvokeVerb('Eject') }
 
 Write-Host '[+] Enable file and printer sharing'
-Set-NetFirewallRule -DisplayGroup 'File and Printer Sharing' -Enabled True -Profile Any
+Set-NetFirewallRule -DisplayGroup 'File and Printer Sharing' -Enabled True -Profile Any | Out-Null
 
 Write-Host '[+] Disable use simple file sharing'
 New-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Control\Lsa' -Name 'ForceGuest' -Value '0' -PropertyType 'DWord' -Force | Out-Null
 
 Write-Host '[+] Disable indexing on all drives'
-Get-WmiObject Win32_Volume -Filter "IndexingEnabled=$true" | Set-WMIInstance -Arguments @{IndexingEnabled=$false}
+Get-WmiObject Win32_Volume -Filter "IndexingEnabled=$true" | Set-WMIInstance -Arguments @{IndexingEnabled=$false} | Out-Null
 
 Write-Host '[+] Disable automatically restart on failure'
 New-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Control\CrashControl' -Name 'AutoReboot' -Value '0' -PropertyType 'DWord' -Force | Out-Null
@@ -81,7 +81,9 @@ Write-Host '[+] Disable crash dump files'
 New-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Control\CrashControl' -Name 'CrashDumpEnabled' -Value '0' -PropertyType 'DWord' -Force | Out-Null
 
 Write-Host '[+] Do not write last access time'
-& fsutil behavior set disablelastaccess 1
+& fsutil behavior set disablelastaccess 1 2>&1 | ForEach-Object {
+    Write-Host "$_"
+}
 if ($LASTEXITCODE -ne 0) {
     throw "fsutil failed with exit code $LASTEXITCODE"
 }
@@ -92,13 +94,13 @@ New-NetFirewallRule -DisplayName 'ICMP Allow incoming V4 echo request' `
                     -IcmpType 8 `
                     -Direction Inbound `
                     -Action Allow `
-                    -Profile Any
+                    -Profile Any | Out-Null
 
 Write-Host '[+] Enable UAC'
 New-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System' -Name 'EnableLUA' -Value '1' -PropertyType 'DWord' -Force | Out-Null
 
 Write-Host '[+] Share c:\temp folder'
-New-SmbShare -Name 'temp' -Path 'C:\temp' -ChangeAccess 'Everyone'
+New-SmbShare -Name 'temp' -Path 'C:\temp' -ChangeAccess 'Everyone' | Out-Null
 
 Write-Host '[+] Updating NuGet provider to a version higher than 2.8.5.201.'
 Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force | Out-Null
@@ -106,7 +108,7 @@ Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force | Out-Null
 Write-Host '[+] Specify the installation policy'
 Set-PSRepository -InstallationPolicy Trusted -Name PSGallery
 
-Write-Host '[+] Install PowerShellGet'
+Write-Host '[+] Installing PowerShellGet'
 Install-Module -Name PowerShellGet -Force -Scope AllUsers
 
 Write-Host '[+] Installing / update PowerShell Pester module'
@@ -114,6 +116,9 @@ Install-Module -Name Pester -Force -SkipPublisherCheck -Scope AllUsers
 
 Write-Host '[+] Installing / update PowerShell SQLServer module'
 Install-Module -Name SqlServer -Force -AllowClobber -Scope Allusers
+
+Write-Host '[+] Installing PowerShell WinGet'
+Install-Module -Name Microsoft.WinGet.Client -Force -Scope AllUsers
 
 Write-Host '[+] Show menu in Explorer'
 New-ItemProperty -Path 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced' -Name 'AlwaysShowMenus' -Value '1' -PropertyType 'DWord' -Force | Out-Null
@@ -140,7 +145,7 @@ Write-Host '[+] Enable Always show all icons and notifications on the taskbar'
 New-ItemProperty -Path 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer' -Name 'EnableAutoTray' -Value '0' -PropertyType 'DWord' -Force | Out-Null
 
 Write-Host '[+] Align taskbar on the left side'
-Set-ItemProperty -Path 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced' -Name 'TaskbarAl' -Type 'DWord' -Value 0
+Set-ItemProperty -Path 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced' -Name 'TaskbarAl' -Type 'DWord' -Value 0 -Force | Out-Null
 
 Write-Host '[+] Show all folders'
 New-ItemProperty -Path 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced' -Name 'NavPaneShowAllFolders' -Value '1' -PropertyType 'DWord' -Force | Out-Null
@@ -183,22 +188,27 @@ if (Test-Path "$TargetScript") {
     $shortcut.Save()
 }
 
-Write-Host '[+] Upgrade all installed packages'
-& winget upgrade --all --disable-interactivity --accept-package-agreements --accept-source-agreements --silent
+Write-Host '[+] Update winget sources'
+& winget source update --disable-interactivity 2>&1 | ForEach-Object {
+    Write-Host "$_"
+}
 if ($LASTEXITCODE -ne 0) {
-        throw "winget failed with exit code $LASTEXITCODE"
+    Write-Warning "[!] winget source update completed with exit code $LASTEXITCODE"
 }
 
 Write-Host '[+] Install global applications'
-& winget install --accept-package-agreements --accept-source-agreements --silent `
+& winget install --disable-interactivity --accept-package-agreements --accept-source-agreements --silent `
 Microsoft.Edit `
 7zip.7zip `
 Microsoft.DotNet.SDK.8 `
 Microsoft.PowerShell `
 Microsoft.Sysinternals.Suite `
-Notepad++.Notepad++
+Notepad++.Notepad++ `
+2>&1 | ForEach-Object {
+    Write-Host "$_"
+}
 if ($LASTEXITCODE -ne 0) {
-        throw "winget failed with exit code $LASTEXITCODE"
+    Write-Warning "[!] winget install completed with exit code $LASTEXITCODE"
 }
 
 Register-BGInfoStartup

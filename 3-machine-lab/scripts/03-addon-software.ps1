@@ -18,16 +18,19 @@ if (Test-Path $EnvFile) {
 if ('CLIENT' -eq "$env:COMPUTERNAME") {
 
     Write-Host '[+] Install additional client packages'
-    & winget install --accept-package-agreements --accept-source-agreements --silent `
+    & winget install --disable-interactivity --accept-package-agreements --accept-source-agreements --silent `
         dnSpyEx.dnSpy `
         Microsoft.VisualStudioCode `
         Microsoft.SQLServerManagementStudio `
         Flameshot.Flameshot `
         Mozilla.Firefox.ESR `
         WinMerge.WinMerge `
-        Softerra.LDAPBrowser
+        Softerra.LDAPBrowser `
+        2>&1 | ForEach-Object {
+        Write-Host "$_"
+    }
     if ($LASTEXITCODE -ne 0) {
-         throw "winget failed with exit code $LASTEXITCODE"
+        Write-Warning "[!] winget install completed with exit code $LASTEXITCODE"
     }
 
     #code --install-extension ms-mssql.mssql
@@ -57,9 +60,11 @@ Install-WindowsFeature -Name `
     -IncludeManagementTools
 
 Write-Host '[+] Install DotNet Hosting bundle for IIS'
-& winget install --accept-package-agreements --accept-source-agreements --silent `
-    Microsoft.DotNet.HostingBundle.8
+& winget install --disable-interactivity --accept-package-agreements --accept-source-agreements --silent `
+    Microsoft.DotNet.HostingBundle.8 2>&1 | ForEach-Object {
+    Write-Host "$_"
+}
 if ($LASTEXITCODE -ne 0) {
-    throw "winget failed with exit code $LASTEXITCODE"
+    Write-Warning "[!] winget install completed with exit code $LASTEXITCODE"
 }
 
