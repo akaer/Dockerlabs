@@ -27,7 +27,10 @@ if ('CLIENT' -eq "$env:COMPUTERNAME") {
         WinMerge.WinMerge `
         Softerra.LDAPBrowser `
         2>&1 | ForEach-Object {
-        Write-Host "$_"
+            $line = "$_"
+            if ($line -match '^[\x21-\x7E]') {
+                 Write-Host $line
+            }
     }
     if ($LASTEXITCODE -ne 0) {
         Write-Warning "[!] winget install completed with exit code $LASTEXITCODE"
@@ -62,7 +65,10 @@ Install-WindowsFeature -Name `
 Write-Host '[+] Install DotNet Hosting bundle for IIS'
 & winget install --disable-interactivity --accept-package-agreements --accept-source-agreements --silent `
     Microsoft.DotNet.HostingBundle.8 2>&1 | ForEach-Object {
-    Write-Host "$_"
+    $line = "$_"
+    if ($line -match '^[\x21-\x7E]') {
+         Write-Host $line
+    }
 }
 if ($LASTEXITCODE -ne 0) {
     Write-Warning "[!] winget install completed with exit code $LASTEXITCODE"

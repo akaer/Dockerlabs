@@ -190,7 +190,10 @@ if (Test-Path "$TargetScript") {
 
 Write-Host '[+] Update winget sources'
 & winget source update --disable-interactivity 2>&1 | ForEach-Object {
-    Write-Host "$_"
+    $line = "$_"
+    if ($line -match '^[\x21-\x7E]') {
+         Write-Host $line
+    }
 }
 if ($LASTEXITCODE -ne 0) {
     Write-Warning "[!] winget source update completed with exit code $LASTEXITCODE"
@@ -205,7 +208,10 @@ Microsoft.PowerShell `
 Microsoft.Sysinternals.Suite `
 Notepad++.Notepad++ `
 2>&1 | ForEach-Object {
-    Write-Host "$_"
+    $line = "$_"
+    if ($line -match '^[\x21-\x7E]') {
+         Write-Host $line
+    }
 }
 if ($LASTEXITCODE -ne 0) {
     Write-Warning "[!] winget install completed with exit code $LASTEXITCODE"
