@@ -44,7 +44,7 @@ trap {
 
     Write-Host ''
 
-    if (Test-Patch 'c:\OEM\configure.log') {
+    if (Test-Path 'c:\OEM\configure.log') {
         & notepad 'c:\OEM\configure.log'
     }
     Exit 1

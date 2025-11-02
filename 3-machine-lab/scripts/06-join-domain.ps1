@@ -72,7 +72,7 @@ if (-not $joined) {
     exit 1
 }
 
-# After domain join, sleep 30 seconds to settle thins a little bit
+# After domain join, sleep 30 seconds to settle things a little bit
 Start-Sleep -Seconds 30
 
 Write-Host '[+] Allow domain users allow remote login'
@@ -89,7 +89,7 @@ while (-not $success -and $attemptCount -lt $maxAttempts) {
         Write-Host 'Successfully added Domain Users to Remote Desktop Users'
     } elseif ($result -match '1789') {
         Write-Host "Domain trust not ready, retrying... (Attempt $attemptCount/$maxAttempts)"
-        Start-Sleep -Seconds 3
+        Start-Sleep -Seconds 15
     } else {
         throw "Unexpected error: $result"
     }
