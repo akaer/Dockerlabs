@@ -73,4 +73,3 @@ Write-Host '[+] Install DotNet Hosting bundle for IIS'
 if ($LASTEXITCODE -ne 0) {
     Write-Warning "[!] winget install completed with exit code $LASTEXITCODE"
 }
-

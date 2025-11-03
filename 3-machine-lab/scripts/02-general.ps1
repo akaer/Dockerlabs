@@ -229,4 +229,3 @@ if (Test-Path "$TargetScript") {
     $shortcut.Arguments = "-NoProfile -ExecutionPolicy bypass -File $TargetScript"
     $shortcut.Save()
 }
-

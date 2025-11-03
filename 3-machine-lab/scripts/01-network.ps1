@@ -126,9 +126,8 @@ $physicalAdapters |
     Where-Object { $_.MacAddress -notin $configuredMACs } |
     Rename-NetAdapter -NewName 'Docker'
 
-Write-Host "[+] Disable IPv6 for non-domain adapter"
+Write-Host '[+] Disable IPv6 for non-domain adapter'
 Disable-NetAdapterBinding -Name 'Docker' -ComponentID ms_tcpip6
 
 Write-Host '[+] After network configuration'
 Get-NetIPConfiguration -Detailed
-

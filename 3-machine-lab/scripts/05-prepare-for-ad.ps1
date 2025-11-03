@@ -99,9 +99,6 @@ if (Test-Path $EnvFile) {
     . $EnvFile
 }
 
-# Set encoding for proper umlaut handling
-[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
-
 # Helper function to create PTR records dynamically
 function Add-ReverseDNSRecord {
     param(
@@ -423,11 +420,11 @@ Stop-Transcript
 Restart-Computer -Force
 '@
 
-Set-Content 'c:\oem\domain_ready.ps1' $DomainReadyScript -Force
+Set-Content 'c:\OEM\domain_ready.ps1' $DomainReadyScript -Force
 
 # Continue with DomainReadyScript after reboot
 $KeyName = 'DomainReady'
-$Command = 'cmd /C if exist "c:\oem\domain_ready.ps1" start "Install" powershell -ExecutionPolicy Unrestricted -NoProfile -File "c:\oem\domain_ready.ps1"'
+$Command = 'cmd /C if exist "c:\OEM\domain_ready.ps1" start "Install" powershell -ExecutionPolicy Unrestricted -NoProfile -File "c:\OEM\domain_ready.ps1"'
 New-ItemProperty -Path 'HKLM:\Software\Microsoft\Windows\CurrentVersion\RunOnce' -Name $KeyName -Value $Command -PropertyType ExpandString | Out-Null
 
 # Use Autologon as administrator
@@ -435,4 +432,3 @@ $winlogonPath = 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon'
 Set-ItemProperty -Path $winlogonPath -Name 'AutoAdminLogon' -Value '1' -Type String
 Set-ItemProperty -Path $winlogonPath -Name 'DefaultUserName' -Value 'administrator' -Type String
 Set-ItemProperty -Path $winlogonPath -Name 'DefaultPassword' -Value "$LOCAL_ADMIN_PASSWORD" -Type String
-

@@ -101,4 +101,3 @@ $regPath = 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon'
 Set-ItemProperty -Path $regPath -Name 'AutoAdminLogon' -Value '0' -Type String
 Remove-ItemProperty -Path $regPath -Name 'DefaultPassword' -ErrorAction SilentlyContinue
 Remove-ItemProperty -Path $regPath -Name 'AutoLogonCount' -ErrorAction SilentlyContinue
-

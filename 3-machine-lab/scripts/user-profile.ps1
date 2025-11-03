@@ -55,4 +55,3 @@ New-ItemProperty -Path 'HKCU:\Software\Microsoft\Internet Explorer\Main' -Name '
 
 Write-Host '[+] Disabling Screensaver'
 New-ItemProperty -Path 'HKCU:\Control Panel\Desktop' -Name 'ScreenSaveActive' -Value '0' -PropertyType 'DWord' -Force | Out-Null
-

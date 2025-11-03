@@ -47,8 +47,7 @@ $networkConfigs = @(
     }
 )
 
-# Configure each network adapter
-$configuredMACs = foreach ($config in $networkConfigs) {
+foreach ($config in $networkConfigs) {
     $adapter = $physicalAdapters | Where-Object { $_.MacAddress -eq $config.MAC }
 
     if ($adapter) {
@@ -66,4 +65,3 @@ $configuredMACs = foreach ($config in $networkConfigs) {
 Remove-Item $PSCommandPath -Force | Out-Null
 
 Read-Host -Prompt 'Waiting for reboot...'
-
