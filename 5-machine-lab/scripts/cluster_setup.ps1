@@ -102,7 +102,7 @@ function Convert-DHCPToStatic {
     # Set DNS servers
     Write-Host '[+] Setting DNS servers...'
     Set-DnsClientServerAddress -InterfaceIndex $interfaceIndex `
-                              -ServerAddresses $dnsServers | Out-Mull
+                              -ServerAddresses $dnsServers | Out-Null
 
     Write-Host '[+] Configuration successfully converted to static IP!'
 
