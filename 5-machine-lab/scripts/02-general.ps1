@@ -240,7 +240,18 @@ if (Test-Path "$TargetScript") {
 
 if (Test-Winget) {
     Write-Host '[+] Update winget sources'
-    & winget source update --disable-interactivity 2>&1 | ForEach-Object {
+    & winget source update 2>&1 | ForEach-Object {
+        $line = "$_"
+        if ($line -match '^[\x21-\x7E]') {
+            Write-Host $line
+        }
+    }
+    if ($LASTEXITCODE -ne 0) {
+        Write-Warning "[!] winget source update completed with exit code $LASTEXITCODE"
+    }
+
+    Write-Host '[+] Upgrade all base apps'
+    & winget upgrade --all 2>&1 | ForEach-Object {
         $line = "$_"
         if ($line -match '^[\x21-\x7E]') {
             Write-Host $line

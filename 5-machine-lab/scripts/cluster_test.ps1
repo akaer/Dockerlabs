@@ -61,8 +61,12 @@ Start-Transcript -Path $LogFilePath -Append
 Write-Host '[+] Start cluster test script'
 
 Write-Host "[+] Waiting for the $clusterName Failover Cluster to be available..."
-while (!(Get-Cluster -Name $clusterName -ErrorAction SilentlyContinue)) {
-    Start-Sleep -Second 15
+while ( -Not (Get-Cluster -Name $clusterName -ErrorAction SilentlyContinue) ) {
+    Start-Sleep -Second 30
+}
+
+while (Get-ClusterResource -Cluster $clusterName | Where-Object State -ne Online) {
+        Start-Sleep -Second 30
 }
 
 Write-Host '[+] Testing the cluster...'
@@ -71,7 +75,6 @@ Remove-Item -ErrorAction SilentlyContinue -Force "$reportPath.*" | Out-Null
 Test-Cluster `
     -Cluster $clusterName `
     -ReportName $reportPath
-Start-Sleep -Seconds 30
 
 Stop-Transcript
 
