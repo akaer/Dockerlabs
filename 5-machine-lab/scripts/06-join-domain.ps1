@@ -99,8 +99,7 @@ $ErrorActionPreference = 'Stop'
 # For SQL1 and SQL2 we continue with some more steps
 if (('SQL1' -eq "$env:COMPUTERNAME") -or ('SQL2' -eq "$env:COMPUTERNAME")) {
     $KeyName = 'ClusterSetup'
-
-    $Command = 'powershell -ExecutionPolicy Unrestricted -NoProfile -File "c:\oem\cluster_setup.ps1"'
+    $Command = 'powershell -ExecutionPolicy Unrestricted -NoProfile -File "c:\OEM\cluster-setup.ps1"'
     New-ItemProperty -Path 'HKLM:\Software\Microsoft\Windows\CurrentVersion\RunOnce' -Name $KeyName -Value $Command -PropertyType ExpandString | Out-Null
 
     # Use Autologon as administrator

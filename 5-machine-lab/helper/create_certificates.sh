@@ -16,6 +16,10 @@ mkdir -p "${CERTS_DIR}"
 cd "${CERTS_DIR}"
 rm -f ./*
 
+if [[ -f ${SCRIPT_DIR}/../env.demo ]]; then
+    . ${SCRIPT_DIR}/../env.demo
+fi
+
 # Create Root CA
 create_root_ca() {
     local -r ca_key="${DOMAIN}.ca.key"
@@ -57,6 +61,7 @@ EOF
 create_certificate() {
     local -r cn="${1}"
     local -r cert_type="${2:-serverAuth,clientAuth}"  # default to dual-purpose
+    local -r san_entries="${3:-DNS:${cn}}"  # default to DNS:CN if not provided
     local -r key="${cn}.key"
     local -r csr="${cn}.csr"
     local -r crt="${cn}.crt"
@@ -89,7 +94,7 @@ create_certificate() {
                         basicConstraints = critical,CA:FALSE
                         keyUsage = critical,keyEncipherment,dataEncipherment,digitalSignature
                         extendedKeyUsage = critical,${cert_type}
-                        subjectAltName = DNS:${cn}
+                        subjectAltName = ${san_entries}
                         subjectKeyIdentifier = hash
                         authorityKeyIdentifier = keyid:always,issuer
 EOF
@@ -116,11 +121,11 @@ main() {
     create_root_ca
 
     # Create server certificates
-    create_certificate "dc.${DOMAIN}" "serverAuth,clientAuth"
-    create_certificate "web.${DOMAIN}" "serverAuth"
-    create_certificate "client.${DOMAIN}" "clientAuth"
-    create_certificate "sql1.${DOMAIN}" "serverAuth"
-    create_certificate "sql2.${DOMAIN}" "serverAuth"
+    create_certificate "${DC_COMPUTERNAME}.${DOMAIN}" "serverAuth,clientAuth" "DNS:${DC_COMPUTERNAME}.${DOMAIN},DNS:${DC_COMPUTERNAME},IP:${DC_NETWORK_IP}"
+    create_certificate "${WEB_COMPUTERNAME}.${DOMAIN}" "serverAuth" "DNS:${WEB_COMPUTERNAME}.${DOMAIN},DNS:${WEB_COMPUTERNAME},IP:${WEB_NETWORK_IP}"
+    create_certificate "${CLIENT_COMPUTERNAME}.${DOMAIN}" "clientAuth"
+    create_certificate "${SQL1_COMPUTERNAME}.${DOMAIN}" "serverAuth" "DNS:${SQL1_COMPUTERNAME}.${DOMAIN},DNS:${SQL1_COMPUTERNAME},IP:${SQL1_NETWORK_IP},DNS:${SQL_CLUSTER_NAME}.${DOMAIN},DNS:${SQL_CLUSTER_NAME},IP:${SQL_CLUSTER_IP}"
+    create_certificate "${SQL2_COMPUTERNAME}.${DOMAIN}" "serverAuth" "DNS:${SQL2_COMPUTERNAME}.${DOMAIN},DNS:${SQL2_COMPUTERNAME},IP:${SQL2_NETWORK_IP},DNS:${SQL_CLUSTER_NAME}.${DOMAIN},DNS:${SQL_CLUSTER_NAME},IP:${SQL_CLUSTER_IP}"
 
     echo "[✓] All certificates generated successfully in ${CERTS_DIR}"
 }
