@@ -251,7 +251,7 @@ if (Test-Winget) {
     }
 
     Write-Host '[+] Upgrade all base apps'
-    & winget upgrade --all 2>&1 | ForEach-Object {
+    & winget upgrade --all --disable-interactivity --accept-package-agreements --accept-source-agreements 2>&1 | ForEach-Object {
         $line = "$_"
         if ($line -match '^[\x21-\x7E]') {
             Write-Host $line
