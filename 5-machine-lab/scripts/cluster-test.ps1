@@ -62,21 +62,37 @@ Write-Host '[+] Start cluster test script'
 
 Write-Host "[+] Waiting for the $clusterName Failover Cluster to be available..."
 while ( -Not (Get-Cluster -Name $clusterName -ErrorAction SilentlyContinue) ) {
+    Write-Host '[-] Wait some seconds for cluster'
     Start-Sleep -Second 30
 }
 
 while (Get-ClusterResource -Cluster $clusterName | Where-Object State -ne Online) {
+    Write-Host '[-] Wait some seconds for cluster resources top get online'
     Start-Sleep -Second 30
 }
 
-Get-ClusterResource -Cluster $clusterName 
+while (Get-ClusterNode -Cluster $clusterName | Where-Object State -ne Up) {
+    Write-Host '[-] Wait some seconds for cluster resources top get online'
+    Start-Sleep -Second 30
+}
 
-Write-Host '[+] Testing the cluster...'
-$reportPath = "C:\OEM\sql-server-cluster-validation-report-${env:COMPUTERNAME}"
+Write-Host '[+] Cluster overview'
+Get-ClusterResource -Cluster $clusterName
+Get-ClusterNode -Cluster $clusterName
+
+Write-Host '[+] Testing/Validating the cluster ...'
+$reportPath = "c:\OEM\sql-server-cluster-validation-report-${env:COMPUTERNAME}"
 Remove-Item -ErrorAction SilentlyContinue -Force "$reportPath.*" | Out-Null
 Test-Cluster `
     -Cluster $clusterName `
     -ReportName $reportPath
 
+# Continue with SQL Server setup after reboot
+$KeyName = 'SqlServerInstall'
+$Command = 'powershell -ExecutionPolicy Unrestricted -NoProfile -File "c:\OEM\sqlserver-install.ps1"'
+New-ItemProperty -Path 'HKLM:\Software\Microsoft\Windows\CurrentVersion\RunOnce' -Name $KeyName -Value $Command -PropertyType ExpandString | Out-Null
+
 Stop-Transcript
+
+Restart-Computer -Force
 

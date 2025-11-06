@@ -15,6 +15,11 @@ if (Test-Path $EnvFile) {
     . $EnvFile
 }
 
+Set-WinUserLanguageList en-US -Force
+
+# set the date format, number format, etc.
+Set-Culture en-US
+
 Write-Host '***********************************************************'
 Write-Host '*     WARNING, container will reboot in some seconds!     *'
 Write-Host '***********************************************************'

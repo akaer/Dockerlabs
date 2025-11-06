@@ -332,6 +332,8 @@ Add-ReverseDNSRecord -IPAddress $WEB_NETWORK_IP -ComputerName $WEB_COMPUTERNAME 
 Add-ReverseDNSRecord -IPAddress $CLIENT_NETWORK_IP -ComputerName $CLIENT_COMPUTERNAME -DomainName $DOMAIN_NAME
 Add-ReverseDNSRecord -IPAddress $SQL1_NETWORK_IP -ComputerName $SQL1_COMPUTERNAME -DomainName $DOMAIN_NAME
 Add-ReverseDNSRecord -IPAddress $SQL2_NETWORK_IP -ComputerName $SQL2_COMPUTERNAME -DomainName $DOMAIN_NAME
+Add-ReverseDNSRecord -IPAddress $FILE_CLUSTER_IP -ComputerName $FILE_ClUSTER_NAME -DomainName $DOMAIN_NAME
+Add-ReverseDNSRecord -IPAddress $SQL_CLUSTER_IP -ComputerName $SQL_CLUSTER_NAME -DomainName $DOMAIN_NAME
 
 Write-Host '[+] Add DNS entries for mailcatcher'
 Add-DnsServerResourceRecordA -Name 'mail' -ZoneName $DOMAIN_NAME -IPv4Address $DOCKER_MAILCATCHER_IP
