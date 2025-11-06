@@ -66,8 +66,10 @@ while ( -Not (Get-Cluster -Name $clusterName -ErrorAction SilentlyContinue) ) {
 }
 
 while (Get-ClusterResource -Cluster $clusterName | Where-Object State -ne Online) {
-        Start-Sleep -Second 30
+    Start-Sleep -Second 30
 }
+
+Get-ClusterResource -Cluster $clusterName 
 
 Write-Host '[+] Testing the cluster...'
 $reportPath = "C:\OEM\sql-server-cluster-validation-report-${env:COMPUTERNAME}"
