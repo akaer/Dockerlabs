@@ -1,4 +1,4 @@
-#Requires -Version 5.1
+﻿#Requires -Version 5.1
 #Requires -RunAsAdministrator
 
 Set-StrictMode -Version Latest
@@ -157,9 +157,9 @@ $dataRootPath = 'C:\sql-server-storage'
     /SQLTEMPDBDIR="$dataRootPath\Data" `
     /SQLTEMPDBLOGDIR="$dataRootPath\Data" `
     /SQLBACKUPDIR="$dataRootPath\Backup"
-if ($LASTEXITCODE) {
+if ($LASTEXITCODE -ne 0) {
     $logsPath = Resolve-path "C:\Program Files\Microsoft SQL Server\*\Setup Bootstrap\Log"
-    throw "failed with exit code $LASTEXITCODE. see the logs at $logsPath."
+    throw "SQL Server installation failed with exit code $LASTEXITCODE. See the logs at $logsPath."
 }
 
 # Grab latest version from https://learn.microsoft.com/en-us/troubleshoot/sql/releases/sqlserver-2022/build-versions
