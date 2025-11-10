@@ -43,6 +43,10 @@ trap {
     }
 
     Write-Host ''
+
+    if (Test-Path 'c:\OEM\configure.log') {
+        & notepad 'c:\OEM\configure.log'
+    }
     Exit 1
 }
 
@@ -113,9 +117,6 @@ function Convert-DHCPToStatic {
     Start-Sleep -Seconds 30
 }
 
-$clusterName = "$FILE_CLUSTER_NAME"
-$clusterIpAddress = "$FILE_CLUSTER_IP"
-
 $LogFilePath = 'c:\OEM\configure.log'
 
 Start-Transcript -Path $LogFilePath -Append
@@ -138,13 +139,13 @@ if (('SQL1' -eq "$env:COMPUTERNAME") -or ('SQL2' -eq "$env:COMPUTERNAME")) {
     New-NetRoute `
         -InterfaceAlias Domain `
         -DestinationPrefix '0.0.0.0/0' `
-        -NextHop ($clusterIpAddress -replace '\.\d+$','.1') `
+        -NextHop ($FILE_CLUSTER_IP -replace '\.\d+$','.1') `
         -RouteMetric 271 | Out-Null
 }
 
 if ('SQL1' -eq "$env:COMPUTERNAME") {
 
-    Write-Host "[+] Creating the $clusterName Failover Cluster..."
+    Write-Host "[+] Creating the $FILE_CLUSTER_NAME Failover Cluster..."
     $dockerNetAdapter = Get-NetAdapter Docker
     $clusterIgnoreNetwork = ($dockerNetAdapter | Get-NetIPConfiguration).IPv4Address `
         | Select-Object -First 1 `
@@ -160,9 +161,9 @@ if ('SQL1' -eq "$env:COMPUTERNAME") {
     Write-Host "[+] Network to ignore during Cluster configuration: $clusterIgnoreNetwork"
 
     New-Cluster `
-        -Name $clusterName `
+        -Name $FILE_CLUSTER_NAME `
         -Node $env:COMPUTERNAME `
-        -StaticAddress $clusterIpAddress `
+        -StaticAddress $FILE_CLUSTER_IP `
         -IgnoreNetwork $clusterIgnoreNetwork `
         -NoStorage
 
@@ -176,15 +177,15 @@ if ('SQL1' -eq "$env:COMPUTERNAME") {
     (Get-ClusterNetwork | Where-Object { $_.Address -ne "$clusterIgnoreDockerNetwork" }).Metric = 900
     Get-ClusterNetwork | Format-List -Property *
 
-    Write-Host "[+] Waiting for the $clusterName Failover Cluster to be available..."
-    while (!(Get-Cluster -Name $clusterName -ErrorAction SilentlyContinue)) {
+    Write-Host "[+] Waiting for the $FILE_CLUSTER_NAME Failover Cluster to be available..."
+    while (!(Get-Cluster -Name $FILE_CLUSTER_NAME -ErrorAction SilentlyContinue)) {
         Start-Sleep -Second 5
     }
 
-    $clusterFileSharePath = "\\dc.${DOMAIN_NAME}\fc-storage-${clusterName}"
-    Write-Host "[+] Setting the $clusterName Failover Cluster Quorum Share to $clusterFileSharePath..."
+    $clusterFileSharePath = "\\${DC_COMPUTERNAME}.${DOMAIN_NAME}\fc-storage-${FILE_CLUSTER_NAME}"
+    Write-Host "[+] Setting the $FILE_CLUSTER_NAME Failover Cluster Quorum Share to $clusterFileSharePath..."
     Set-ClusterQuorum `
-        -Cluster $clusterName `
+        -Cluster $FILE_CLUSTER_NAME `
         -NodeAndFileShareMajority $clusterFileSharePath | Out-Null
 
     'Cluster installation ready' | Out-File '\\host.lan\data\state\cluster_installation_ready.txt'
@@ -200,9 +201,9 @@ if ('SQL2' -eq "$env:COMPUTERNAME") {
         Start-Sleep -Seconds 30
     }
 
-    Write-Host "[+] Adding the current node to the $clusterName Failover Cluster..."
+    Write-Host "[+] Adding the current node to the $FILE_CLUSTER_NAME Failover Cluster..."
     Add-ClusterNode `
-        -Cluster $clusterName `
+        -Cluster $FILE_CLUSTER_NAME `
         -Name $env:COMPUTERNAME | Out-Null
 
     Start-Sleep -Seconds 30
@@ -223,13 +224,14 @@ $KeyName = 'ClusterTest'
 $Command = 'powershell -ExecutionPolicy Unrestricted -NoProfile -File "c:\OEM\cluster-test.ps1"'
 New-ItemProperty -Path 'HKLM:\Software\Microsoft\Windows\CurrentVersion\RunOnce' -Name $KeyName -Value $Command -PropertyType ExpandString | Out-Null
 
-# Use Autologon as administrator
+# # Use Autologon as administrator
 $winlogonPath = 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon'
 Set-ItemProperty -Path $winlogonPath -Name 'AutoAdminLogon' -Value '1' -Type String
 Set-ItemProperty -Path $winlogonPath -Name 'DefaultUserName' -Value 'administrator' -Type String
+Set-ItemProperty -Path $winlogonPath -Name 'DefaultDomainName' -Value "$DOMAIN_NAME" -Type String
 Set-ItemProperty -Path $winlogonPath -Name 'DefaultPassword' -Value "$LOCAL_ADMIN_PASSWORD" -Type String
 
 Stop-Transcript
 
-Restart-Computer -Force
+& shutdown /r /t 30 /c 'Autoinstallation' /d p:2:4
 

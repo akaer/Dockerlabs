@@ -15,7 +15,7 @@ if (Test-Path $EnvFile) {
     . $EnvFile
 }
 
-$env:SQL_SERVER_INSTANCE_NAME = "SQLSERVER"
+$env:SQL_SERVER_INSTANCE_NAME = 'SQLSERVER'
 $env:SQL_SERVER_INSTANCE = "SQL\$env:SQL_SERVER_INSTANCE_NAME"
 $env:SQL_SERVER_PRIMARY_INSTANCE = "SQL1\$env:SQL_SERVER_INSTANCE_NAME"
 $env:SQL_SERVER_SERVICE_NAME = "MSSQL`$$env:SQL_SERVER_INSTANCE_NAME"
@@ -48,12 +48,12 @@ function Get-SqlServerSetup {
         $archiveName = Split-Path -Leaf $archiveUrl
         $archivePath = "$mediaPath\$archiveName"
         if (!(Test-Path $archivePath)) {
-            Write-Host "Downloading $archiveName SQL Server Bootstrap Installer..."
+            Write-Host "[-] Downloading $archiveName SQL Server Bootstrap Installer..."
             (New-Object Net.WebClient).DownloadFile($archiveUrl, $archivePath)
         }
         $sfxPath = "$mediaPath\SQL*ENU.exe"
         if (!(Test-Path $sfxPath)) {
-            Write-Host "Downloading SQL Server Setup..."
+            Write-Host '[-] Downloading SQL Server Setup...'
             &$archivePath `
                 /ENU `
                 /LANGUAGE=en-US `
@@ -65,10 +65,10 @@ function Get-SqlServerSetup {
                 | Out-String -Stream `
                 | Out-Host
             if ($LASTEXITCODE) {
-                throw "failed with exit code $LASTEXITCODE"
+                throw "[!] Failed with exit code $LASTEXITCODE"
             }
         }
-        Write-Host "Extracting SQL Server Setup..."
+        Write-Host '[-] Extracting SQL Server Setup...'
         &$sfxPath `
             /Q `
             /X:"$(Split-Path -Parent $setupPath)" `
@@ -76,7 +76,7 @@ function Get-SqlServerSetup {
             | Out-String -Stream `
             | Out-Host
         if ($LASTEXITCODE) {
-            throw "failed with exit code $LASTEXITCODE"
+            throw "[!] Failed with exit code $LASTEXITCODE"
         }
     }
 

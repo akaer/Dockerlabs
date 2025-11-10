@@ -43,6 +43,10 @@ trap {
     }
 
     Write-Host ''
+
+    if (Test-Path 'c:\OEM\configure.log') {
+        & notepad 'c:\OEM\configure.log'
+    }
     Exit 1
 }
 
@@ -52,39 +56,63 @@ if (Test-Path $EnvFile) {
     . $EnvFile
 }
 
-$clusterName = "$FILE_CLUSTER_NAME"
-
 $LogFilePath = 'c:\OEM\configure.log'
 
 Start-Transcript -Path $LogFilePath -Append
 
-Write-Host '[+] Start cluster test script'
+if ( 'SQL1' -eq "$env:COMPUTERNAME" ) {
+    do {
+        $ping = Test-Connection -ComputerName SQL2 -count 1 -Quiet -ErrorAction SilentlyContinue
+        Start-Sleep -Second 30
+    } until ($ping)
 
-Write-Host "[+] Waiting for the $clusterName Failover Cluster to be available..."
-while ( -Not (Get-Cluster -Name $clusterName -ErrorAction SilentlyContinue) ) {
+    'Node SQL1 ready' | Out-File '\\host.lan\data\state\cluster_node_sql1.txt'
+}
+
+if ( 'SQL2' -eq "$env:COMPUTERNAME" ) {
+    do {
+        $ping = Test-Connection -ComputerName SQL1 -count 1 -Quiet -ErrorAction SilentlyContinue
+        Start-Sleep -Second 30
+    } until ($ping)
+
+    'Node SQL2 ready' | Out-File '\\host.lan\data\state\cluster_node_sql2.txt'
+}
+
+Write-Host '[+] Wait for cluster nodes'
+while ($true) {
+
+    if ( (Test-Path -Path '\\host.lan\data\state\cluster_node_sql1.txt') -and (Test-Path -Path '\\host.lan\data\state\cluster_node_sql2.txt') ) {
+        break
+    }
+
+    Start-Sleep -Second 30
+}
+
+Write-Host "[+] Waiting for the $FILE_CLUSTER_NAME Failover Cluster to be available..."
+while ( -Not (Get-Cluster -Name $FILE_CLUSTER_NAME -ErrorAction SilentlyContinue) ) {
     Write-Host '[-] Wait some seconds for cluster'
     Start-Sleep -Second 30
 }
 
-while (Get-ClusterResource -Cluster $clusterName | Where-Object State -ne Online) {
-    Write-Host '[-] Wait some seconds for cluster resources top get online'
+while (Get-ClusterResource -Cluster $FILE_CLUSTER_NAME | Where-Object State -ne Online) {
+    Write-Host '[-] Wait some seconds for cluster resources to get online'
     Start-Sleep -Second 30
 }
 
-while (Get-ClusterNode -Cluster $clusterName | Where-Object State -ne Up) {
-    Write-Host '[-] Wait some seconds for cluster resources top get online'
+while (Get-ClusterNode -Cluster $FILE_CLUSTER_NAME | Where-Object State -ne Up) {
+    Write-Host '[-] Wait some seconds for cluster resources to get online'
     Start-Sleep -Second 30
 }
 
-Write-Host '[+] Cluster overview'
-Get-ClusterResource -Cluster $clusterName
-Get-ClusterNode -Cluster $clusterName
+Write-Host "[+] Cluster overview $FILE_CLUSTER_NAME"
+Get-ClusterResource -Cluster $FILE_CLUSTER_NAME
+Get-ClusterNode -Cluster $FILE_CLUSTER_NAME
 
 Write-Host '[+] Testing/Validating the cluster ...'
 $reportPath = "c:\OEM\sql-server-cluster-validation-report-${env:COMPUTERNAME}"
 Remove-Item -ErrorAction SilentlyContinue -Force "$reportPath.*" | Out-Null
 Test-Cluster `
-    -Cluster $clusterName `
+    -Cluster $FILE_CLUSTER_NAME `
     -ReportName $reportPath
 
 # Continue with SQL Server setup after reboot
@@ -94,5 +122,4 @@ New-ItemProperty -Path 'HKLM:\Software\Microsoft\Windows\CurrentVersion\RunOnce'
 
 Stop-Transcript
 
-Restart-Computer -Force
-
+& shutdown /r /t 30 /c 'Autoinstallation' /d p:2:4

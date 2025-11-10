@@ -470,7 +470,7 @@ Remove-ItemProperty -Path $regPath -Name 'AutoLogonCount' -ErrorAction SilentlyC
 
 Stop-Transcript
 
-Restart-Computer -Force
+& shutdown /r /t 30 /c 'Autoinstallation' /d p:2:4
 '@
 
 Set-Content 'c:\oem\domain_ready.ps1' $DomainReadyScript -Force

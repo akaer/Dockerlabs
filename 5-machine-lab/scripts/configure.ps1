@@ -83,4 +83,4 @@ Foreach($f in @( $FilesToRun )) {
 Write-Host '[+] Reboot VM'
 Stop-Transcript
 
-Restart-Computer -Force
+& shutdown /r /t 30 /c 'Autoinstallation' /d p:2:4

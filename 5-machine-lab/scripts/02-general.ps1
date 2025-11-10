@@ -63,7 +63,7 @@ Write-Host '[+] Set time zone'
 Set-Timezone -Name "$CustomTimeZone"
 
 Write-Host '[+] Configure Microsoft Edge browser'
-$edgePolicyPath = "HKLM:\SOFTWARE\Policies\Microsoft\Edge"
+$edgePolicyPath = 'HKLM:\SOFTWARE\Policies\Microsoft\Edge'
 if (-not (Test-Path $edgePolicyPath)) {
     New-Item -Path $edgePolicyPath -Force | Out-Null
 }
@@ -78,10 +78,6 @@ Write-Host '[+] Disable Windows Updates'
 Set-ItemProperty -Path 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate\AU' -Name NoAutoUpdate -Value 1
 Stop-Service -Name wuauserv -Force -ErrorAction Stop
 Set-Service -Name wuauserv -StartupType Disabled -ErrorAction Stop
-
-Write-Host '[+] Eject cd from drive'
-$sh = New-Object -ComObject 'Shell.Application'
-$sh.Namespace(17).Items() | Where-Object { $_.Type -eq 'CD Drive' } | foreach { $_.InvokeVerb('Eject') }
 
 Write-Host '[+] Enable file and printer sharing'
 Set-NetFirewallRule -DisplayGroup 'File and Printer Sharing' -Enabled True -Profile Any | Out-Null
@@ -100,7 +96,7 @@ if (('SQL1' -eq "$env:COMPUTERNAME") -or ('SQL2' -eq "$env:COMPUTERNAME")) {
     New-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Control\CrashControl' -Name 'CrashDumpEnabled' -Value '1' -PropertyType 'DWord' -Force | Out-Null
     New-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Control\CrashControl' -Name 'FilterPages' -Value '1' -PropertyType 'DWord' -Force | Out-Null
 } else {
-    Write-Host '[+] Disablee crash dump files'
+    Write-Host '[+] Disable crash dump files'
     New-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Control\CrashControl' -Name 'CrashDumpEnabled' -Value '0' -PropertyType 'DWord' -Force | Out-Null
 }
 
@@ -120,8 +116,10 @@ New-NetFirewallRule -DisplayName 'ICMP Allow incoming V4 echo request' `
                     -Action Allow `
                     -Profile Any | Out-Null
 
-Write-Host '[+] Enable UAC'
-New-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System' -Name 'EnableLUA' -Value '1' -PropertyType 'DWord' -Force | Out-Null
+if ('CLIENT' -eq "$env:COMPUTERNAME") {
+    Write-Host '[+] Enable UAC'
+    New-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System' -Name 'EnableLUA' -Value '1' -PropertyType 'DWord' -Force | Out-Null
+}
 
 Write-Host '[+] Share c:\temp folder'
 New-SmbShare -Name 'temp' -Path 'C:\temp' -ChangeAccess 'Everyone' | Out-Null
@@ -161,8 +159,6 @@ New-ItemProperty -Path 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer
 
 Write-Host '[+] Small icons in taskbar'
 New-ItemProperty -Path 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced' -Name 'TaskbarSmallIcons' -Value '1' -PropertyType 'DWord' -Force | Out-Null
-
-Write-Host '[+] Small icons in taskbar'
 New-ItemProperty -Path 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced' -Name 'TaskbarGlomLevel' -Value '2' -PropertyType 'DWord' -Force | Out-Null
 
 Write-Host '[+] Enable Always show all icons and notifications on the taskbar'
@@ -235,4 +231,3 @@ if (Test-Winget) {
         Write-Warning "[!] winget source update completed with exit code $LASTEXITCODE"
     }
 }
-

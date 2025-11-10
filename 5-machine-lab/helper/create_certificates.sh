@@ -36,7 +36,7 @@ create_root_ca() {
         -key "${ca_key}" \
         -days "${CA_VALIDITY}" \
         -out "${ca_crt}" \
-        -subj "/O=${ORG}/CN=${DOMAIN} Root CA" \
+        -subj "/CN=${DOMAIN} Root CA" \
         -extensions v3_ca \
         -config <(cat <<-EOF
                         [req]
@@ -78,7 +78,7 @@ create_certificate() {
     openssl req -new -sha256 \
         -key "${key}" \
         -out "${csr}" \
-        -subj "/O=${ORG}/CN=${cn}"
+        -subj "/CN=${cn}"
 
     # Sign certificate with CA
     openssl x509 -req -sha256 \
@@ -105,8 +105,10 @@ EOF
 
     # Create PKCS#12 for Windows (password-less for automation)
     openssl pkcs12 -export -passout pass: \
+        -keyex \
         -inkey "${key}" \
         -in "${crt}" \
+        -certfile "${crt}" \
         -out "${cn}.pfx"
 
     # Cleanup

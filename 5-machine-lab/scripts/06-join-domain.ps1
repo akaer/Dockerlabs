@@ -106,6 +106,7 @@ if (('SQL1' -eq "$env:COMPUTERNAME") -or ('SQL2' -eq "$env:COMPUTERNAME")) {
     $winlogonPath = 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon'
     Set-ItemProperty -Path $winlogonPath -Name 'AutoAdminLogon' -Value '1' -Type String
     Set-ItemProperty -Path $winlogonPath -Name 'DefaultUserName' -Value 'administrator' -Type String
+    Set-ItemProperty -Path $winlogonPath -Name 'DefaultDomainName' -Value "$DOMAIN_NAME" -Type String
     Set-ItemProperty -Path $winlogonPath -Name 'DefaultPassword' -Value "$LOCAL_ADMIN_PASSWORD" -Type String
 
     exit 0
