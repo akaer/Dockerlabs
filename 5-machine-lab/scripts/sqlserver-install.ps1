@@ -180,20 +180,20 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 # Grab latest version from https://learn.microsoft.com/en-us/troubleshoot/sql/releases/sqlserver-2022/build-versions
-#$DownloadUrl = 'https://download.microsoft.com/download/a89001cb-9c99-48d3-9f14-ded054b35fe4/SQLServer2022-KB5065865-x64.exe'
-#$DownloadPath = "$env:TEMP\SQLServer2022-CU.exe"
-#$InstallArgs = '/ACTION=Patch /QUIET /IACCEPTSQLSERVERLICENSETERMS'
+$DownloadUrl = 'https://download.microsoft.com/download/a89001cb-9c99-48d3-9f14-ded054b35fe4/SQLServer2022-KB5065865-x64.exe'
+$DownloadPath = "$env:TEMP\SQLServer2022-CU.exe"
+$InstallArgs = '/qs /action=Patch /allinstances /IAcceptSQLServerLicenseTerms'
 
-#Write-Host '[+] Downloading latest SQL Server 2022 CU...'
-#(New-Object Net.WebClient).DownloadFile($DownloadUrl, $DownloadPath)
+Write-Host '[+] Downloading latest SQL Server 2022 CU...'
+(New-Object Net.WebClient).DownloadFile($DownloadUrl, $DownloadPath)
 
 # Step 3: Silent installation of CU
-#Write-Host '[+] Installing SQL Server 2022 CU silently...'
-#Start-Process -FilePath $DownloadPath -ArgumentList $InstallArgs -Wait
+Write-Host '[+] Installing SQL Server 2022 CU silently...'
+Start-Process -FilePath $DownloadPath -ArgumentList $InstallArgs -Wait
 
 # Step 4: Cleanup (optional)
-#Remove-Item $DownloadPath -Force
-#Write-Host '[+] SQL Server 2022 CU installed successfully.'
+Remove-Item $DownloadPath -Force
+Write-Host '[+] SQL Server 2022 CU installed successfully.'
 
 Write-Host "[+] Configuring SQL Server to allow encrypted connections at ${SQL_CLUSTER_NAME}.${DOMAIN_NAME}..."
 $certificate = Get-ChildItem -DnsName "${SQL_CLUSTER_NAME}.${DOMAIN_NAME}" Cert:\LocalMachine\My
