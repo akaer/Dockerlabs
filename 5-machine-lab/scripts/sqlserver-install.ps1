@@ -133,29 +133,9 @@ New-NetFirewallRule `
     -LocalPort $mirroringEndpointPort `
     | Out-Null
 
-# download.
 $setupPath = Get-SqlServerSetup
 
-# install.
-# NB this cannot be executed from a network share (e.g. c:\vagrant).
-# NB the logs are saved at "$env:ProgramFiles\Microsoft SQL Server\<version>\Setup Bootstrap\Log\<YYYYMMDD_HHMMSS>".
-#    e.g. "C:\Program Files\Microsoft SQL Server\160\Setup Bootstrap\Log"
-# NB you could also use /INDICATEPROGRESS to make the setup write the logs to
-#    stdout in realtime.
-# see https://learn.microsoft.com/en-us/sql/database-engine/install-windows/install-sql-server-from-the-command-prompt?view=sql-server-ver16#integrated-install-failover-cluster-parameters
-# see https://learn.microsoft.com/en-us/sql/sql-server/failover-clusters/install/create-a-new-sql-server-failover-cluster-setup?view=sql-server-ver16
-# see https://learn.microsoft.com/en-us/sql/database-engine/availability-groups/windows/create-an-availability-group-sql-server-powershell?
 Write-Host 'Installing SQL Server...'
-# NB the setup data path parameters are:
-#       /INSTALLSQLDATADIR    System database directory
-#       /SQLUSERDBDIR         User database directory
-#       /SQLUSERDBLOGDIR      User database log directory
-#       /SQLTEMPDBDIR         TempDB data directory
-#       /SQLTEMPDBLOGDIR      TempDB log directory
-#       /SQLBACKUPDIR         Backup directory
-# NB when using the setup wizard, it sets /INSTALLSQLDATADIR, /SQLUSERDBDIR,
-#    /SQLUSERDBLOGDIR, /SQLTEMPDBDIR, and /SQLTEMPDBLOGDIR to the same
-#    directory path.
 $dataRootPath = 'C:\sql-server-storage'
 & $setupPath `
     /IACCEPTSQLSERVERLICENSETERMS `
@@ -187,11 +167,9 @@ $InstallArgs = '/qs /action=Patch /allinstances /IAcceptSQLServerLicenseTerms'
 Write-Host '[+] Downloading latest SQL Server 2022 CU...'
 (New-Object Net.WebClient).DownloadFile($DownloadUrl, $DownloadPath)
 
-# Step 3: Silent installation of CU
 Write-Host '[+] Installing SQL Server 2022 CU silently...'
 Start-Process -FilePath $DownloadPath -ArgumentList $InstallArgs -Wait
 
-# Step 4: Cleanup (optional)
 Remove-Item $DownloadPath -Force
 Write-Host '[+] SQL Server 2022 CU installed successfully.'
 
@@ -415,8 +393,8 @@ if ( 'SQL1' -eq "$env:COMPUTERNAME" ) {
     New-SqlAvailabilityGroupListener `
         -Path "SQLSERVER:\SQL\$env:COMPUTERNAME\$env:SQL_SERVER_INSTANCE_NAME\AvailabilityGroups\$SQL_CLUSTER_NAME" `
         -Name $SQL_CLUSTER_NAME `
-        -StaticIp "$SQL_CLUSTER_IP/255.255.255.0" `
-        -Port 1433 `
+        -StaticIp "$SQL_CLUSTER_IP/$SQL_CLUSTER_NETMASK" `
+        -Port $SQL_CLUSTER_PORT `
         | Out-Null
 }
 
@@ -435,4 +413,7 @@ Remove-ItemProperty -Path $regPath -Name 'DefaultPassword' -ErrorAction Silently
 Remove-ItemProperty -Path $regPath -Name 'DefaultDomainName' -ErrorAction SilentlyContinue
 Remove-ItemProperty -Path $regPath -Name 'AutoLogonCount' -ErrorAction SilentlyContinue
 
+Write-Host '[+] Reboot VM'
 Stop-Transcript
+
+& shutdown /r /t 30 /c 'Autoinstallation' /d p:2:4

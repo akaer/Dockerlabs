@@ -68,7 +68,7 @@ for ($attempt = 1; $attempt -le $maxAttempts; $attempt++) {
 }
 
 if (-not $joined) {
-    Write-Error 'Domain join failed'
+    Write-Error '[!] Domain join failed'
     exit 1
 }
 
@@ -86,9 +86,9 @@ while (-not $success -and $attemptCount -lt $maxAttempts) {
     $result = & net localgroup 'Remote Desktop Users' 'Domain Users' /add 2>&1
     if ($LASTEXITCODE -eq 0 -or $result -match 'already a member') {
         $success = $true
-        Write-Host 'Successfully added Domain Users to Remote Desktop Users'
+        Write-Host '[+] Successfully added Domain Users to Remote Desktop Users'
     } elseif ($result -match '1789') {
-        Write-Host "Domain trust not ready, retrying... (Attempt $attemptCount/$maxAttempts)"
+        Write-Host "[-] Domain trust not ready, retrying... (Attempt $attemptCount/$maxAttempts)"
         Start-Sleep -Seconds 15
     } else {
         throw "Unexpected error: $result"
