@@ -3,7 +3,8 @@
 set -Eeuo pipefail
 
 # Configuration
-readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+readonly SCRIPT_DIR
 readonly CERTS_DIR="${SCRIPT_DIR}/../scripts/certs"
 readonly DOMAIN="${1:-qs-lab.local}"
 readonly ORG="Umbrella Corp."

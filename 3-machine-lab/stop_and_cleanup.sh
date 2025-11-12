@@ -1,8 +1,5 @@
 #!/usr/bin/env bash
 
-# Set global script options
-set -euo pipefail
-
 docker compose --env-file env.demo down -v
 
 sudo killall vde_switch || true

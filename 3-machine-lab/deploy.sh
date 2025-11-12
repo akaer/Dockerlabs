@@ -8,15 +8,19 @@ for cmd in unix2dos inotifywait docker vde_switch; do
     fi
 done
 
-if [[ -f ./env.demo ]]; then
-    . ./env.demo
+INCLUDEFILE="$(dirname "$0")/env.demo"
+readonly INCLUDEFILE
+
+if [[ -f "$INCLUDEFILE" ]]; then
+    # shellcheck source=./env.demo
+    source "$INCLUDEFILE"
 fi
 
 helper/create_certificates.sh "$DOMAIN_NAME"
 
 sudo vde_switch -d -s /tmp/vde_switch.sock -t vde_tap0 -M /tmp/vde_mgmt.sock
 
-cp -f env.demo scripts/env.ps1
+cp -f "$INCLUDEFILE" scripts/env.ps1
 
 # Convert docker compose env file to a sourceable file by PowerShell
 sed -i -e "/=/ s|^|\$|g" \
@@ -26,10 +30,10 @@ sed -i -e "/=/ s|^|\$|g" \
        scripts/env.ps1
 unix2dos -m scripts/env.ps1
 
-docker compose --env-file env.demo up -d
+docker compose --env-file "$INCLUDEFILE" up -d
 
 # Start of silly Microsoft Windows workaround to reboot any of our VMs to stablelize the network configuration
-mapfile -t computernames < <(grep '_COMPUTERNAME=' "./env.demo" | cut -d'=' -f2)
+mapfile -t computernames < <(grep '_COMPUTERNAME=' "$INCLUDEFILE" | cut -d'=' -f2)
 
 WATCH_DIR="$(pwd)/shared/state"
 
@@ -49,7 +53,7 @@ echo "[+] Total containers to reboot: ${#computernames[@]}"
 
 rebooted_count=0
 
-inotifywait -m -e create,moved_to "$WATCH_DIR" --format '%f' | while read filename; do
+inotifywait -m -e create,moved_to "$WATCH_DIR" --format '%f' | while read -r filename; do
     for name in "${computernames[@]}"; do
         if [[ "$filename" == "${name}_reboot.txt" ]]; then
             echo "[+] $(date): Detected $filename - triggering restart for container: $name"
