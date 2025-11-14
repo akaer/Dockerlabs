@@ -329,14 +329,14 @@ switch (${env:COMPUTERNAME}) {
         $DOMAIN_NAME = $DOMAIN_NAME_2
         $NETBIOS_NAME = $NETBIOS_NAME_2
         $DOMAIN_MODE = $DOMAIN_MODE_2
-        $DC_COMPUTERNAME = $DC2_COMPUTERNAME 
+        $DC_COMPUTERNAME = $DC2_COMPUTERNAME
         $DC_NETWORK_IP = $DC2_NETWORK_IP
     }
     'dc3' {
         $DOMAIN_NAME = $DOMAIN_NAME_3
         $NETBIOS_NAME = $NETBIOS_NAME_3
         $DOMAIN_MODE = $DOMAIN_MODE_3
-        $DC_COMPUTERNAME = $DC3_COMPUTERNAME 
+        $DC_COMPUTERNAME = $DC3_COMPUTERNAME
         $DC_NETWORK_IP = $DC3_NETWORK_IP
     }
     default {$DOMAIN_NAME = $DOMAIN_NAME_1}
@@ -373,12 +373,14 @@ catch {
 
 Write-Host '[+] Add DNS entries to reverse DNS lookup zone'
 Add-ReverseDNSRecord -IPAddress $DC_NETWORK_IP -ComputerName $DC_COMPUTERNAME -DomainName $DOMAIN_NAME
-Add-ReverseDNSRecord -IPAddress $WEB_NETWORK_IP -ComputerName $WEB_COMPUTERNAME -DomainName $DOMAIN_NAME
-Add-ReverseDNSRecord -IPAddress $CLIENT_NETWORK_IP -ComputerName $CLIENT_COMPUTERNAME -DomainName $DOMAIN_NAME
+if ('dc1' -eq $env:COMPUTERNAME) {
+    Add-ReverseDNSRecord -IPAddress $WEB_NETWORK_IP -ComputerName $WEB_COMPUTERNAME -DomainName $DOMAIN_NAME
+    Add-ReverseDNSRecord -IPAddress $CLIENT_NETWORK_IP -ComputerName $CLIENT_COMPUTERNAME -DomainName $DOMAIN_NAME
 
-Write-Host '[+] Add DNS entries for db and mailcatcher'
-Add-DnsServerResourceRecordA -Name 'db' -ZoneName $DOMAIN_NAME -IPv4Address $DOCKER_DB_IP
-Add-DnsServerResourceRecordA -Name 'mail' -ZoneName $DOMAIN_NAME -IPv4Address $DOCKER_MAILCATCHER_IP
+    Write-Host '[+] Add DNS entries for db and mailcatcher'
+    Add-DnsServerResourceRecordA -Name 'db' -ZoneName $DOMAIN_NAME -IPv4Address $DOCKER_DB_IP
+    Add-DnsServerResourceRecordA -Name 'mail' -ZoneName $DOMAIN_NAME -IPv4Address $DOCKER_MAILCATCHER_IP
+}
 
 # Create OUs
 New-ADOrganizationalUnitDynamic -Name 'ServiceAccounts' -Description 'Service Accounts for test lab' -DomainName $DOMAIN_NAME
