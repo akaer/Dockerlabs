@@ -62,7 +62,7 @@ if (("$env:COMPUTERNAME" -eq 'dc2') -or ("$env:COMPUTERNAME" -eq 'dc3')) {
         $params = @{
             Credential = (New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList "administrator@$DOMAIN_NAME_1", (ConvertTo-SecureString "$AD_ADMIN_PASSWORD" -AsPlainText -Force))
             SafeModeAdministratorPassword = (ConvertTo-SecureString "$AD_ADMIN_PASSWORD" -AsPlainText -Force)
-            NewDomainName = "child"
+            NewDomainName = "$(${NETBIOS_NAME}.ToLower())"
             NewDomainNetBiosName = "$NETBIOS_NAME"
             ParentDomainName = "$DOMAIN_NAME_1"
             InstallDNS = $true
@@ -78,6 +78,30 @@ if (("$env:COMPUTERNAME" -eq 'dc2') -or ("$env:COMPUTERNAME" -eq 'dc3')) {
             Force = $true
         }
         Install-ADDSDomain @params
+    }
+
+    if ("$env:COMPUTERNAME" -eq 'dc3') {
+        Write-Host "[+] Create tree domain $DOMAIN_NAME"
+        Import-Module ADDSDeployment
+        $p = @{
+            Credential = (New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList "administrator@$DOMAIN_NAME_1", (ConvertTo-SecureString "$AD_ADMIN_PASSWORD" -AsPlainText -Force))
+            SafeModeAdministratorPassword = (ConvertTo-SecureString "$AD_ADMIN_PASSWORD" -AsPlainText -Force)
+            NewDomainName = "$DOMAIN_NAME"
+            NewDomainNetBiosName = "$NETBIOS_NAME"
+            ParentDomainName = "$DOMAIN_NAME_1"
+            InstallDNS = $true
+            CreateDNSDelegation = $false
+            DomainMode = 'Win2025'
+            DomainType = 'TreeDomain'
+            ReplicationSourceDC = "$DC1_COMPUTERNAME.$DOMAIN_NAME_1"
+            DatabasePath = 'c:\AD\NTDS'
+            SysvolPath = 'c:\AD\SYSVOL'
+            LogPath = 'c:\AD\Logs'
+            NoRebootOnCompletion = $true
+            SkipPreChecks = $true
+            Force = $true
+        }
+        Install-ADDSDomain @p
     }
 
     Write-Host 'Waiting for manual interaction'
