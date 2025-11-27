@@ -21,7 +21,7 @@ if ("$env:COMPUTERNAME" -like 'dc*') {
 
 $DOMAIN_NAME = $DOMAIN_NAME_1
 
-Write-Host "[+] Waiting for domain to be available"
+Write-Host '[+] Waiting for domain to be available'
 while ($true) {
     if (Test-Path -Path '\\host.lan\data\state\domain_ready.txt') {
 

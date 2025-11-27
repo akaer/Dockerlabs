@@ -42,8 +42,50 @@ Write-Host '[+] Install Active Directory software'
 Import-Module ServerManager
 Install-WindowsFeature AD-Domain-Services,RSAT-AD-AdminCenter,RSAT-ADDS-Tools
 
-Write-Host "[+] Create domain $DOMAIN_NAME"
 Import-Module ADDSDeployment
+
+if (("$env:COMPUTERNAME" -eq 'dc2') -or ("$env:COMPUTERNAME" -eq 'dc3')) {
+
+    Write-Host "[+] Waiting for parent domain to be available"
+    while ($true) {
+        if (Test-Path -Path '\\host.lan\data\state\domain_ready.txt') {
+
+            break
+
+        }
+
+        Start-Sleep -Seconds 30
+    }
+
+    if ("$env:COMPUTERNAME" -eq 'dc2') {
+        Write-Host "[+] Create child domain $DOMAIN_NAME"
+        $params = @{
+            Credential = (New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList "administrator@$DOMAIN_NAME_1", (ConvertTo-SecureString "$AD_ADMIN_PASSWORD" -AsPlainText -Force))
+            SafeModeAdministratorPassword = (ConvertTo-SecureString "$AD_ADMIN_PASSWORD" -AsPlainText -Force)
+            NewDomainName = "child"
+            NewDomainNetBiosName = "$NETBIOS_NAME"
+            ParentDomainName = "$DOMAIN_NAME_1"
+            InstallDNS = $true
+            CreateDNSDelegation = $true
+            DomainMode = "$DOMAIN_MODE"
+            DomainType = 'ChildDomain'
+            ReplicationSourceDC = "$DC1_COMPUTERNAME.$DOMAIN_NAME_1"
+            DatabasePath = 'c:\AD\NTDS'
+            SysvolPath = 'c:\AD\SYSVOL'
+            LogPath = 'c:\AD\Logs'
+            NoRebootOnCompletion = $true
+            SkipPreChecks = $true
+            Force = $true
+        }
+        Install-ADDSDomain @params
+    }
+
+    Write-Host 'Waiting for manual interaction'
+
+    $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown") | Out-Null
+}
+
+Write-Host "[+] Create domain $DOMAIN_NAME"
 Install-ADDSForest `
     -DomainName "$DOMAIN_NAME" `
     -DomainNetBiosName "$NETBIOS_NAME" `
@@ -463,6 +505,9 @@ Remove-ItemProperty -Path $regPath -Name 'DefaultPassword' -ErrorAction Silently
 Remove-ItemProperty -Path $regPath -Name 'AutoLogonCount' -ErrorAction SilentlyContinue
 
 Stop-Transcript
+
+# Wait some more minutes to allow other VMs to join domain
+Start-Sleep -Duration (New-TimeSpan -Minutes 5)
 
 Restart-Computer -Force
 '@

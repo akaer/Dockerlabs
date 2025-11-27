@@ -177,7 +177,7 @@ Write-Host '[+] Add permanent environment variables to disable telemetry'
 [System.Environment]::SetEnvironmentVariable('POWERSHELL_UPDATECHECK','Off', 'Machine')
 [System.Environment]::SetEnvironmentVariable('POWERSHELL_UPDATECHECK_OPTOUT','1', 'Machine')
 
-$TargetScript = 'C:\OEM\user-profile.ps1'
+$TargetScript = 'c:\OEM\user-profile.ps1'
 if (Test-Path "$TargetScript") {
     $SourceFilePath = 'powershell.exe'
     $ShortcutPath = 'C:\Users\Public\Desktop\Run me once.lnk'
@@ -219,7 +219,7 @@ if ($LASTEXITCODE -ne 0) {
 
 Register-BGInfoStartup
 
-$TargetScript = 'C:\OEM\addon-software.ps1'
+$TargetScript = 'c:\OEM\addon-software.ps1'
 if (Test-Path "$TargetScript") {
     $SourceFilePath = 'powershell.exe'
     $ShortcutPath = 'C:\Users\Public\Desktop\Install more apps.lnk'
