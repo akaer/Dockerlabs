@@ -65,7 +65,7 @@ if (-not (Test-Path 'c:\temp')) {
 
 Set-ExecutionPolicy -ExecutionPolicy Unrestricted
 
-$FilesToRun = @( Get-ChildItem -Path "C:\OEM\*.ps1" -Exclude configure.ps1,env.ps1,user-profile.ps1,cluster-setup.ps1,cluster-test.ps1,sqlserver-common.ps1,sqlserver-install.ps1 -ErrorAction SilentlyContinue )
+$FilesToRun = @( Get-ChildItem -Path "c:\OEM\*.ps1" -Exclude configure.ps1,env.ps1,user-profile.ps1,cluster-setup.ps1,cluster-test.ps1,sqlserver-common.ps1,sqlserver-install.ps1 -ErrorAction SilentlyContinue )
 $Stopwatch = New-Object System.Diagnostics.Stopwatch
 
 Foreach($f in @( $FilesToRun )) {

@@ -473,11 +473,11 @@ Stop-Transcript
 & shutdown /r /t 30 /c 'Autoinstallation' /d p:2:4
 '@
 
-Set-Content 'c:\oem\domain_ready.ps1' $DomainReadyScript -Force
+Set-Content 'c:\OEM\domain_ready.ps1' $DomainReadyScript -Force
 
 # Continue with DomainReadyScript after reboot
 $KeyName = 'DomainReady'
-$Command = 'cmd /C if exist "c:\oem\domain_ready.ps1" start "Install" powershell -ExecutionPolicy Unrestricted -NoProfile -File "c:\oem\domain_ready.ps1"'
+$Command = 'cmd /C if exist "c:\OEM\domain_ready.ps1" start "Install" powershell -ExecutionPolicy Unrestricted -NoProfile -File "c:\OEM\domain_ready.ps1"'
 New-ItemProperty -Path 'HKLM:\Software\Microsoft\Windows\CurrentVersion\RunOnce' -Name $KeyName -Value $Command -PropertyType ExpandString | Out-Null
 
 # Use Autologon as administrator

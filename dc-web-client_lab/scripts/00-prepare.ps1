@@ -21,7 +21,7 @@ Write-Host '***********************************************************'
 
 # Continue auto installation after container reboot
 $KeyName = 'AutoInstall'
-$Command = 'cmd /C if exist "C:\OEM\install.bat" start "Install" "cmd /C C:\OEM\install.bat"'
+$Command = 'cmd /C if exist "c:\OEM\install.bat" start "Install" "cmd /C c:\OEM\install.bat"'
 New-ItemProperty -Path 'HKLM:\Software\Microsoft\Windows\CurrentVersion\RunOnce' -Name $KeyName -Value $Command -PropertyType ExpandString | Out-Null
 
 # Set reboot marker
