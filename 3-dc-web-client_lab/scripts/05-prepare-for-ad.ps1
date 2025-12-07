@@ -65,11 +65,12 @@ if (("$env:COMPUTERNAME" -eq 'dc2') -or ("$env:COMPUTERNAME" -eq 'dc3')) {
             NewDomainName = "$(${NETBIOS_NAME}.ToLower())"
             NewDomainNetBiosName = "$NETBIOS_NAME"
             ParentDomainName = "$DOMAIN_NAME_1"
+            SiteName = 'Default-First-Site-Name'
             InstallDNS = $true
+            NoGlobalCatalog = $false
             CreateDNSDelegation = $true
             DomainMode = "$DOMAIN_MODE"
             DomainType = 'ChildDomain'
-            ReplicationSourceDC = "$DC1_COMPUTERNAME.$DOMAIN_NAME_1"
             DatabasePath = 'c:\AD\NTDS'
             SysvolPath = 'c:\AD\SYSVOL'
             LogPath = 'c:\AD\Logs'
@@ -89,11 +90,12 @@ if (("$env:COMPUTERNAME" -eq 'dc2') -or ("$env:COMPUTERNAME" -eq 'dc3')) {
             NewDomainName = "$DOMAIN_NAME"
             NewDomainNetBiosName = "$NETBIOS_NAME"
             ParentDomainName = "$DOMAIN_NAME_1"
+            SiteName = 'Default-First-Site-Name'
             InstallDNS = $true
+            NoGlobalCatalog = $false
             CreateDNSDelegation = $false
             DomainMode = 'Win2025'
             DomainType = 'TreeDomain'
-            ReplicationSourceDC = "$DC1_COMPUTERNAME.$DOMAIN_NAME_1"
             DatabasePath = 'c:\AD\NTDS'
             SysvolPath = 'c:\AD\SYSVOL'
             LogPath = 'c:\AD\Logs'
@@ -104,9 +106,14 @@ if (("$env:COMPUTERNAME" -eq 'dc2') -or ("$env:COMPUTERNAME" -eq 'dc3')) {
         Install-ADDSDomain @p
     }
 
-    Write-Host 'Waiting for manual interaction'
 
-    $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown") | Out-Null
+    Write-Host '[+] Deactivate auto logon'
+    $regPath = 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon'
+    Set-ItemProperty -Path $regPath -Name 'AutoAdminLogon' -Value '0' -Type String
+    Remove-ItemProperty -Path $regPath -Name 'DefaultPassword' -ErrorAction SilentlyContinue
+    Remove-ItemProperty -Path $regPath -Name 'AutoLogonCount' -ErrorAction SilentlyContinue
+
+    Restart-Computer -Force
 }
 
 Write-Host "[+] Create domain $DOMAIN_NAME"
@@ -547,4 +554,5 @@ New-ItemProperty -Path 'HKLM:\Software\Microsoft\Windows\CurrentVersion\RunOnce'
 $winlogonPath = 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon'
 Set-ItemProperty -Path $winlogonPath -Name 'AutoAdminLogon' -Value '1' -Type String
 Set-ItemProperty -Path $winlogonPath -Name 'DefaultUserName' -Value 'administrator' -Type String
+Set-ItemProperty -Path $winlogonPath -Name 'DefaultDomainName' -Value "$DOMAIN_NAME" -Type String
 Set-ItemProperty -Path $winlogonPath -Name 'DefaultPassword' -Value "$LOCAL_ADMIN_PASSWORD" -Type String

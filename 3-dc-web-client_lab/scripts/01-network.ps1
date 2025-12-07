@@ -145,5 +145,8 @@ $physicalAdapters |
 Write-Host '[+] Disable IPv6 for non-domain adapter'
 Disable-NetAdapterBinding -Name 'Docker' -ComponentID ms_tcpip6
 
+Set-NetIPInterface -InterfaceAlias 'Docker' -InterfaceMetric 1000
+Set-NetIPInterface -InterfaceAlias 'Domain' -InterfaceMetric 10
+
 Write-Host '[+] After network configuration'
 Get-NetIPConfiguration -Detailed
