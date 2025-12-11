@@ -106,6 +106,7 @@ if (("$env:COMPUTERNAME" -eq 'dc2') -or ("$env:COMPUTERNAME" -eq 'dc3')) {
         Install-ADDSDomain @p
     }
 
+    Set-DnsServerPrimaryZone "$DomainName" -SecureSecondaries TransferAnyServer -Notify Notify
 
     Write-Host '[+] Deactivate auto logon'
     $regPath = 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon'
