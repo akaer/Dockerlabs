@@ -79,6 +79,8 @@ if (("$env:COMPUTERNAME" -eq 'dc2') -or ("$env:COMPUTERNAME" -eq 'dc3')) {
             Force = $true
         }
         Install-ADDSDomain @params
+
+        "Domain $DOMAIN_NAME ready" | Out-File "\\host.lan\data\state\domaincontroller_${env:COMPUTERNAME}_ready.txt"
     }
 
     if ("$env:COMPUTERNAME" -eq 'dc3') {
@@ -104,9 +106,11 @@ if (("$env:COMPUTERNAME" -eq 'dc2') -or ("$env:COMPUTERNAME" -eq 'dc3')) {
             Force = $true
         }
         Install-ADDSDomain @p
+
+        "Domain $DOMAIN_NAME ready" | Out-File "\\host.lan\data\state\domaincontroller_${env:COMPUTERNAME}_ready.txt"
     }
 
-    Set-DnsServerPrimaryZone "$DomainName" -SecureSecondaries TransferAnyServer -Notify Notify
+    Set-DnsServerPrimaryZone "$DOMAIN_NAME" -SecureSecondaries TransferAnyServer -Notify Notify
 
     Write-Host '[+] Deactivate auto logon'
     $regPath = 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon'
@@ -536,11 +540,25 @@ Set-ItemProperty -Path $regPath -Name 'AutoAdminLogon' -Value '0' -Type String
 Remove-ItemProperty -Path $regPath -Name 'DefaultPassword' -ErrorAction SilentlyContinue
 Remove-ItemProperty -Path $regPath -Name 'AutoLogonCount' -ErrorAction SilentlyContinue
 
+
+Write-Host "[+] Waiting for domain ${DOMAIN_NAME_3} to be available"
+while ($true) {
+    if (Test-Path -Path "\\host.lan\data\state\domaincontroller_${DC3_COMPUTERNAME}_ready.txt") {
+
+        Start-Sleep 60
+
+        break
+    }
+
+    Start-Sleep -Seconds 30
+}
+
+Write-Host '[+] Add secondary dns zone'
+Add-DnsServerSecondaryZone -Name "${DOMAIN_NAME_3}" -MasterServers ${DC3_NETWORK_IP} -ZoneFile "${DOMAIN_NAME_3}.dns"
+
 Stop-Transcript
 
-# Wait some more minutes to allow other VMs to join domain
-Start-Sleep -Duration (New-TimeSpan -Minutes 5)
-
+Start-Sleep -Seconds 180
 Restart-Computer -Force
 '@
 

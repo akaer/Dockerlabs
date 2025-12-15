@@ -16,9 +16,9 @@ if [[ -f "$INCLUDEFILE" ]]; then
     source "$INCLUDEFILE"
 fi
 
-helper/create_certificates.sh "$DOMAIN_NAME_3" "dc3"
-helper/create_certificates.sh "$DOMAIN_NAME_2" "dc2"
 helper/create_certificates.sh "$DOMAIN_NAME_1" "dc1"
+helper/create_certificates.sh "$DOMAIN_NAME_2" "dc2"
+helper/create_certificates.sh "$DOMAIN_NAME_3" "dc3"
 
 sudo vde_switch -d -s /tmp/vde_switch.sock -t vde_tap0 -M /tmp/vde_mgmt.sock
 

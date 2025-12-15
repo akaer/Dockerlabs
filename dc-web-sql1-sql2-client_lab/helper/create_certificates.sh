@@ -7,15 +7,15 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 readonly SCRIPT_DIR
 readonly CERTS_DIR="${SCRIPT_DIR}/../scripts/certs"
 readonly DOMAIN="${1:-qs-lab.local}"
-readonly ORG="Umbrella Corp."
 readonly CA_VALIDITY=3650  # 10 years
 readonly CERT_VALIDITY=3650
 readonly KEY_SIZE=2048
 
+
 # Create certificate directory
-mkdir -p "${CERTS_DIR}"
-cd "${CERTS_DIR}"
-rm -f ./*
+if [[ ! -d "$CERTS_DIR" ]]; then
+    mkdir -p "$CERTS_DIR"
+fi
 
 if [[ -f ${SCRIPT_DIR}/../env.demo ]]; then
     . ${SCRIPT_DIR}/../env.demo
@@ -133,4 +133,7 @@ main() {
     echo "[✓] All certificates generated successfully in ${CERTS_DIR}"
 }
 
+cd "$CERTS_DIR"
 main
+
+exit 0

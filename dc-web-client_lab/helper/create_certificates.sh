@@ -7,15 +7,19 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 readonly SCRIPT_DIR
 readonly CERTS_DIR="${SCRIPT_DIR}/../scripts/certs"
 readonly DOMAIN="${1:-qs-lab.local}"
-readonly ORG="Umbrella Corp."
 readonly CA_VALIDITY=3650  # 10 years
 readonly CERT_VALIDITY=3650
 readonly KEY_SIZE=2048
 
+
 # Create certificate directory
-mkdir -p "${CERTS_DIR}"
-cd "${CERTS_DIR}"
-rm -f ./*
+if [[ ! -d "$CERTS_DIR" ]]; then
+    mkdir -p "$CERTS_DIR"
+fi
+
+if [[ -f ${SCRIPT_DIR}/../env.demo ]]; then
+    . ${SCRIPT_DIR}/../env.demo
+fi
 
 # Create Root CA
 create_root_ca() {
@@ -33,7 +37,7 @@ create_root_ca() {
         -key "${ca_key}" \
         -days "${CA_VALIDITY}" \
         -out "${ca_crt}" \
-        -subj "/O=${ORG}/CN=${DOMAIN} Root CA" \
+        -subj "/CN=${DOMAIN} Root CA" \
         -extensions v3_ca \
         -config <(cat <<-EOF
                         [req]
@@ -58,6 +62,7 @@ EOF
 create_certificate() {
     local -r cn="${1}"
     local -r cert_type="${2:-serverAuth,clientAuth}"  # default to dual-purpose
+    local -r san_entries="${3:-DNS:${cn}}"  # default to DNS:CN if not provided
     local -r key="${cn}.key"
     local -r csr="${cn}.csr"
     local -r crt="${cn}.crt"
@@ -74,7 +79,7 @@ create_certificate() {
     openssl req -new -sha256 \
         -key "${key}" \
         -out "${csr}" \
-        -subj "/O=${ORG}/CN=${cn}"
+        -subj "/CN=${cn}"
 
     # Sign certificate with CA
     openssl x509 -req -sha256 \
@@ -90,7 +95,7 @@ create_certificate() {
                         basicConstraints = critical,CA:FALSE
                         keyUsage = critical,keyEncipherment,dataEncipherment,digitalSignature
                         extendedKeyUsage = critical,${cert_type}
-                        subjectAltName = DNS:${cn}
+                        subjectAltName = ${san_entries}
                         subjectKeyIdentifier = hash
                         authorityKeyIdentifier = keyid:always,issuer
 EOF
@@ -101,8 +106,10 @@ EOF
 
     # Create PKCS#12 for Windows (password-less for automation)
     openssl pkcs12 -export -passout pass: \
+        -keyex \
         -inkey "${key}" \
         -in "${crt}" \
+        -certfile "${crt}" \
         -out "${cn}.pfx"
 
     # Cleanup
@@ -117,10 +124,10 @@ main() {
     create_root_ca
 
     # Create server certificates
-    create_certificate "dc.${DOMAIN}" "serverAuth,clientAuth"
-    create_certificate "web.${DOMAIN}" "serverAuth"
+    create_certificate "dc.${DOMAIN}" "serverAuth,clientAuth" "DNS:dc.${DOMAIN},DNS:dc,IP:${DC_NETWORK_IP}"
+    create_certificate "web.${DOMAIN}" "serverAuth" "DNS:web.${DOMAIN},DNS:web,IP:${WEB_NETWORK_IP}"
     create_certificate "client.${DOMAIN}" "clientAuth"
-    create_certificate "db.${DOMAIN}" "serverAuth"
+    create_certificate "db.${DOMAIN}" "serverAuth" "DNS:db.${DOMAIN},DNS:db,IP:${DOCKER_DB_IP}"
 
     # Copy DB certificates for MSSQL
     cp "db.${DOMAIN}.crt" "../../db/mssql.crt" 2>/dev/null || true
@@ -129,4 +136,7 @@ main() {
     echo "[✓] All certificates generated successfully in ${CERTS_DIR}"
 }
 
+cd "$CERTS_DIR"
 main
+
+exit 0
