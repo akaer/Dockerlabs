@@ -7,10 +7,10 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 readonly SCRIPT_DIR
 readonly CERTS_DIR="${SCRIPT_DIR}/../scripts/certs"
 readonly DOMAIN="${1:-qs-lab.local}"
+readonly DC="${2:-dc}"
 readonly CA_VALIDITY=3650  # 10 years
 readonly CERT_VALIDITY=3650
 readonly KEY_SIZE=2048
-
 
 # Create certificate directory
 if [[ ! -d "$CERTS_DIR" ]]; then
@@ -20,6 +20,8 @@ fi
 if [[ -f ${SCRIPT_DIR}/../env.demo ]]; then
     . ${SCRIPT_DIR}/../env.demo
 fi
+
+declare DC_NETWORK_IP="${DC^^}_NETWORK_IP"
 
 # Create Root CA
 create_root_ca() {
@@ -124,11 +126,19 @@ main() {
     create_root_ca
 
     # Create server certificates
-    create_certificate "${DC_COMPUTERNAME}.${DOMAIN}" "serverAuth,clientAuth" "DNS:${DC_COMPUTERNAME}.${DOMAIN},DNS:${DC_COMPUTERNAME},IP:${DC_NETWORK_IP}"
-    create_certificate "${WEB_COMPUTERNAME}.${DOMAIN}" "serverAuth" "DNS:${WEB_COMPUTERNAME}.${DOMAIN},DNS:${WEB_COMPUTERNAME},IP:${WEB_NETWORK_IP}"
-    create_certificate "${CLIENT_COMPUTERNAME}.${DOMAIN}" "clientAuth"
-    create_certificate "${SQL1_COMPUTERNAME}.${DOMAIN}" "serverAuth" "DNS:${SQL1_COMPUTERNAME}.${DOMAIN},DNS:${SQL1_COMPUTERNAME},IP:${SQL1_NETWORK_IP},DNS:${SQL_CLUSTER_NAME}.${DOMAIN},DNS:${SQL_CLUSTER_NAME},IP:${SQL_CLUSTER_IP}"
-    create_certificate "${SQL2_COMPUTERNAME}.${DOMAIN}" "serverAuth" "DNS:${SQL2_COMPUTERNAME}.${DOMAIN},DNS:${SQL2_COMPUTERNAME},IP:${SQL2_NETWORK_IP},DNS:${SQL_CLUSTER_NAME}.${DOMAIN},DNS:${SQL_CLUSTER_NAME},IP:${SQL_CLUSTER_IP}"
+    create_certificate "${DC}.${DOMAIN}" "serverAuth,clientAuth" "DNS:${DC}.${DOMAIN},DNS:${DC},IP:${!DC_NETWORK_IP}"
+
+    # Special case for forest domain. We only want to have web, client and db to be part of that
+    # domain. The other domains are for there own and only trusted to each other
+    if [[ "dc1" == ${DC,,} ]]; then
+        create_certificate "web.${DOMAIN}" "serverAuth" "DNS:web.${DOMAIN},DNS:web,IP:${WEB_NETWORK_IP}"
+        create_certificate "client.${DOMAIN}" "clientAuth"
+        create_certificate "db.${DOMAIN}" "serverAuth" "DNS:db.${DOMAIN},DNS:db,IP:${DOCKER_DB_IP}"
+
+        # Copy DB certificates for MSSQL
+        cp "db.${DOMAIN}.crt" "../../db/mssql.crt" 2>/dev/null || true
+        cp "db.${DOMAIN}.key" "../../db/mssql.key" 2>/dev/null || true
+    fi
 
     echo "[✓] All certificates generated successfully in ${CERTS_DIR}"
 }

@@ -15,16 +15,113 @@ if (Test-Path $EnvFile) {
     . $EnvFile
 }
 
-if ('DC' -ne "$env:COMPUTERNAME") {
+switch (${env:COMPUTERNAME}) {
+    'dc1' {
+        $DOMAIN_NAME = $DOMAIN_NAME_1
+        $NETBIOS_NAME = $NETBIOS_NAME_1
+        $DOMAIN_MODE = $DOMAIN_MODE_1
+    }
+    'dc2' {
+        $DOMAIN_NAME = $DOMAIN_NAME_2
+        $NETBIOS_NAME = $NETBIOS_NAME_2
+        $DOMAIN_MODE = $DOMAIN_MODE_2
+    }
+    'dc3' {
+        $DOMAIN_NAME = $DOMAIN_NAME_3
+        $NETBIOS_NAME = $NETBIOS_NAME_3
+        $DOMAIN_MODE = $DOMAIN_MODE_3
+    }
+    default {$DOMAIN_NAME = $DOMAIN_NAME_1}
+}
+
+if (-not ("$env:COMPUTERNAME" -like 'dc*')) {
     exit 0
 }
 
 Write-Host '[+] Install Active Directory software'
 Import-Module ServerManager
-Install-WindowsFeature AD-Domain-Services,RSAT-AD-AdminCenter,RSAT-ADDS-Tools,RSAT-Clustering-Mgmt,RSAT-Clustering-PowerShell
+Install-WindowsFeature AD-Domain-Services,RSAT-AD-AdminCenter,RSAT-ADDS-Tools
+
+Import-Module ADDSDeployment
+
+if (("$env:COMPUTERNAME" -eq 'dc2') -or ("$env:COMPUTERNAME" -eq 'dc3')) {
+
+    Write-Host "[+] Waiting for parent domain to be available"
+    while ($true) {
+        if (Test-Path -Path '\\host.lan\data\state\domain_ready.txt') {
+
+            break
+
+        }
+
+        Start-Sleep -Seconds 30
+    }
+
+    if ("$env:COMPUTERNAME" -eq 'dc2') {
+        Write-Host "[+] Create child domain $DOMAIN_NAME"
+        $params = @{
+            Credential = (New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList "administrator@$DOMAIN_NAME_1", (ConvertTo-SecureString "$AD_ADMIN_PASSWORD" -AsPlainText -Force))
+            SafeModeAdministratorPassword = (ConvertTo-SecureString "$AD_ADMIN_PASSWORD" -AsPlainText -Force)
+            NewDomainName = "$(${NETBIOS_NAME}.ToLower())"
+            NewDomainNetBiosName = "$NETBIOS_NAME"
+            ParentDomainName = "$DOMAIN_NAME_1"
+            SiteName = 'Default-First-Site-Name'
+            InstallDNS = $true
+            NoGlobalCatalog = $false
+            CreateDNSDelegation = $true
+            DomainMode = "$DOMAIN_MODE"
+            DomainType = 'ChildDomain'
+            DatabasePath = 'c:\AD\NTDS'
+            SysvolPath = 'c:\AD\SYSVOL'
+            LogPath = 'c:\AD\Logs'
+            NoRebootOnCompletion = $true
+            SkipPreChecks = $true
+            Force = $true
+        }
+        Install-ADDSDomain @params
+
+        "Domain $DOMAIN_NAME ready" | Out-File "\\host.lan\data\state\domaincontroller_${env:COMPUTERNAME}_ready.txt"
+    }
+
+    if ("$env:COMPUTERNAME" -eq 'dc3') {
+        Write-Host "[+] Create tree domain $DOMAIN_NAME"
+        Import-Module ADDSDeployment
+        $p = @{
+            Credential = (New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList "administrator@$DOMAIN_NAME_1", (ConvertTo-SecureString "$AD_ADMIN_PASSWORD" -AsPlainText -Force))
+            SafeModeAdministratorPassword = (ConvertTo-SecureString "$AD_ADMIN_PASSWORD" -AsPlainText -Force)
+            NewDomainName = "$DOMAIN_NAME"
+            NewDomainNetBiosName = "$NETBIOS_NAME"
+            ParentDomainName = "$DOMAIN_NAME_1"
+            SiteName = 'Default-First-Site-Name'
+            InstallDNS = $true
+            NoGlobalCatalog = $false
+            CreateDNSDelegation = $false
+            DomainMode = 'Win2025'
+            DomainType = 'TreeDomain'
+            DatabasePath = 'c:\AD\NTDS'
+            SysvolPath = 'c:\AD\SYSVOL'
+            LogPath = 'c:\AD\Logs'
+            NoRebootOnCompletion = $true
+            SkipPreChecks = $true
+            Force = $true
+        }
+        Install-ADDSDomain @p
+
+        "Domain $DOMAIN_NAME ready" | Out-File "\\host.lan\data\state\domaincontroller_${env:COMPUTERNAME}_ready.txt"
+    }
+
+    Set-DnsServerPrimaryZone "$DOMAIN_NAME" -SecureSecondaries TransferAnyServer -Notify Notify
+
+    Write-Host '[+] Deactivate auto logon'
+    $regPath = 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon'
+    Set-ItemProperty -Path $regPath -Name 'AutoAdminLogon' -Value '0' -Type String
+    Remove-ItemProperty -Path $regPath -Name 'DefaultPassword' -ErrorAction SilentlyContinue
+    Remove-ItemProperty -Path $regPath -Name 'AutoLogonCount' -ErrorAction SilentlyContinue
+
+    Restart-Computer -Force
+}
 
 Write-Host "[+] Create domain $DOMAIN_NAME"
-Import-Module ADDSDeployment
 Install-ADDSForest `
     -DomainName "$DOMAIN_NAME" `
     -DomainNetBiosName "$NETBIOS_NAME" `
@@ -57,7 +154,7 @@ $DebugPreference = 'SilentlyContinue'
 $ProgressPreference = 'SilentlyContinue'
 
 trap {
-    $ts = Get-Date -Format 'yyyy-MM-dd HH:mm:ss'
+    $ts = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
 
     Write-Host ''
     Write-Host "[$ts] ERROR: $_"
@@ -298,6 +395,32 @@ $LogFilePath = 'c:\OEM\configure.log'
 
 Start-Transcript -Path $LogFilePath -Append
 
+switch (${env:COMPUTERNAME}) {
+    'dc1' {
+        $DOMAIN_NAME = $DOMAIN_NAME_1
+        $NETBIOS_NAME = $NETBIOS_NAME_1
+        $DOMAIN_MODE = $DOMAIN_MODE_1
+        $DC_COMPUTERNAME = $DC1_COMPUTERNAME
+        $DC_NETWORK_IP = $DC1_NETWORK_IP
+    }
+    'dc2' {
+        $DOMAIN_NAME = $DOMAIN_NAME_2
+        $NETBIOS_NAME = $NETBIOS_NAME_2
+        $DOMAIN_MODE = $DOMAIN_MODE_2
+        $DC_COMPUTERNAME = $DC2_COMPUTERNAME
+        $DC_NETWORK_IP = $DC2_NETWORK_IP
+    }
+    'dc3' {
+        $DOMAIN_NAME = $DOMAIN_NAME_3
+        $NETBIOS_NAME = $NETBIOS_NAME_3
+        $DOMAIN_MODE = $DOMAIN_MODE_3
+        $DC_COMPUTERNAME = $DC3_COMPUTERNAME
+        $DC_NETWORK_IP = $DC3_NETWORK_IP
+    }
+    default {$DOMAIN_NAME = $DOMAIN_NAME_1}
+}
+
+
 Write-Host '[+] Start domain ready script'
 
 # Convert domain to DN
@@ -328,15 +451,14 @@ catch {
 
 Write-Host '[+] Add DNS entries to reverse DNS lookup zone'
 Add-ReverseDNSRecord -IPAddress $DC_NETWORK_IP -ComputerName $DC_COMPUTERNAME -DomainName $DOMAIN_NAME
-Add-ReverseDNSRecord -IPAddress $WEB_NETWORK_IP -ComputerName $WEB_COMPUTERNAME -DomainName $DOMAIN_NAME
-Add-ReverseDNSRecord -IPAddress $CLIENT_NETWORK_IP -ComputerName $CLIENT_COMPUTERNAME -DomainName $DOMAIN_NAME
-Add-ReverseDNSRecord -IPAddress $SQL1_NETWORK_IP -ComputerName $SQL1_COMPUTERNAME -DomainName $DOMAIN_NAME
-Add-ReverseDNSRecord -IPAddress $SQL2_NETWORK_IP -ComputerName $SQL2_COMPUTERNAME -DomainName $DOMAIN_NAME
-Add-ReverseDNSRecord -IPAddress $FILE_CLUSTER_IP -ComputerName $FILE_ClUSTER_NAME -DomainName $DOMAIN_NAME
-Add-ReverseDNSRecord -IPAddress $SQL_CLUSTER_IP -ComputerName $SQL_CLUSTER_NAME -DomainName $DOMAIN_NAME
+if ('dc1' -eq $env:COMPUTERNAME) {
+    Add-ReverseDNSRecord -IPAddress $WEB_NETWORK_IP -ComputerName $WEB_COMPUTERNAME -DomainName $DOMAIN_NAME
+    Add-ReverseDNSRecord -IPAddress $CLIENT_NETWORK_IP -ComputerName $CLIENT_COMPUTERNAME -DomainName $DOMAIN_NAME
 
-Write-Host '[+] Add DNS entries for mailcatcher'
-Add-DnsServerResourceRecordA -Name 'mail' -ZoneName $DOMAIN_NAME -IPv4Address $DOCKER_MAILCATCHER_IP
+    Write-Host '[+] Add DNS entries for db and mailcatcher'
+    Add-DnsServerResourceRecordA -Name 'db' -ZoneName $DOMAIN_NAME -IPv4Address $DOCKER_DB_IP
+    Add-DnsServerResourceRecordA -Name 'mail' -ZoneName $DOMAIN_NAME -IPv4Address $DOCKER_MAILCATCHER_IP
+}
 
 # Create OUs
 New-ADOrganizationalUnitDynamic -Name 'ServiceAccounts' -Description 'Service Accounts for test lab' -DomainName $DOMAIN_NAME
@@ -393,8 +515,6 @@ $msaAdPath = "CN=Managed Service Accounts,$domainDn"
 
 @(
     'svc_jobserver'
-    'sqlserver'
-    'sqlserver_agent'
 ) | ForEach-Object {
     New-ADServiceAccount `
         -Path $msaAdPath `
@@ -412,54 +532,6 @@ $msaAdPath = "CN=Managed Service Accounts,$domainDn"
         | Out-Null
 }
 
-Write-Host '[+] Create cluster file share'
-$shareName = "fc-storage-${FILE_ClUSTER_NAME}"
-$sharePath = "c:\$shareName"
-
-$accounts = @(
-    "Domain Computers"
-)
-
-New-Item -Path $sharePath -ItemType Directory | Out-Null
-$acl = Get-Acl $sharePath
-$acl.SetAccessRuleProtection($true, $false)
-$acl.Access | ForEach-Object { $acl.RemoveAccessRule($_) }
-@(
-    "SYSTEM",
-    "Administrators"
-) | ForEach-Object {
-    $acl.AddAccessRule((
-        New-Object System.Security.AccessControl.FileSystemAccessRule(
-            $_,
-            "FullControl",
-            "ContainerInherit,ObjectInherit",
-            "None",
-            "Allow"
-        )))
-}
-$acl.AddAccessRule((
-    New-Object System.Security.AccessControl.FileSystemAccessRule(
-        "CREATOR OWNER",
-        "FullControl",
-        "ContainerInherit,ObjectInherit",
-        "InheritOnly",
-        "Allow"
-    )))
-$accounts | ForEach-Object {
-    $acl.AddAccessRule((
-        New-Object System.Security.AccessControl.FileSystemAccessRule(
-            $_,
-            "CreateDirectories",
-            "None",
-            "None",
-            "Allow"
-        )))
-}
-Set-Acl -Path $sharePath -AclObject $acl
-
-# create the failover cluster storage smb share.
-New-SmbShare -Name $shareName -Path $sharePath -FullAccess $accounts
-
 'Domain ready' | Out-File '\\host.lan\data\state\domain_ready.txt'
 
 Write-Host '[+] Deactivate auto logon'
@@ -468,9 +540,26 @@ Set-ItemProperty -Path $regPath -Name 'AutoAdminLogon' -Value '0' -Type String
 Remove-ItemProperty -Path $regPath -Name 'DefaultPassword' -ErrorAction SilentlyContinue
 Remove-ItemProperty -Path $regPath -Name 'AutoLogonCount' -ErrorAction SilentlyContinue
 
+
+Write-Host "[+] Waiting for domain ${DOMAIN_NAME_3} to be available"
+while ($true) {
+    if (Test-Path -Path "\\host.lan\data\state\domaincontroller_${DC3_COMPUTERNAME}_ready.txt") {
+
+        Start-Sleep 60
+
+        break
+    }
+
+    Start-Sleep -Seconds 30
+}
+
+Write-Host '[+] Add secondary dns zone'
+Add-DnsServerSecondaryZone -Name "${DOMAIN_NAME_3}" -MasterServers ${DC3_NETWORK_IP} -ZoneFile "${DOMAIN_NAME_3}.dns"
+
 Stop-Transcript
 
-& shutdown /r /t 30 /c 'Autoinstallation' /d p:2:4
+Start-Sleep -Seconds 180
+Restart-Computer -Force
 '@
 
 Set-Content 'c:\OEM\domain_ready.ps1' $DomainReadyScript -Force
@@ -484,5 +573,5 @@ New-ItemProperty -Path 'HKLM:\Software\Microsoft\Windows\CurrentVersion\RunOnce'
 $winlogonPath = 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon'
 Set-ItemProperty -Path $winlogonPath -Name 'AutoAdminLogon' -Value '1' -Type String
 Set-ItemProperty -Path $winlogonPath -Name 'DefaultUserName' -Value 'administrator' -Type String
+Set-ItemProperty -Path $winlogonPath -Name 'DefaultDomainName' -Value "$DOMAIN_NAME" -Type String
 Set-ItemProperty -Path $winlogonPath -Name 'DefaultPassword' -Value "$LOCAL_ADMIN_PASSWORD" -Type String
-

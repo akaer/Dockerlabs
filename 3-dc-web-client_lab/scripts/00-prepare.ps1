@@ -31,9 +31,19 @@ $physicalAdapters = Get-NetAdapter -Physical
 # Define network configurations
 $networkConfigs = @(
     @{
-        Name         = 'DC'
-        MAC          = $DC_NETWORK_MAC
-        ComputerName = $DC_COMPUTERNAME
+        Name         = 'DC1'
+        MAC          = $DC1_NETWORK_MAC
+        ComputerName = $DC1_COMPUTERNAME
+    },
+    @{
+        Name         = 'DC2'
+        MAC          = $DC2_NETWORK_MAC
+        ComputerName = $DC2_COMPUTERNAME
+    },
+    @{
+        Name         = 'DC3'
+        MAC          = $DC3_NETWORK_MAC
+        ComputerName = $DC3_COMPUTERNAME
     },
     @{
         Name         = 'Web'
