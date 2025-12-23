@@ -160,7 +160,7 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 # Grab latest version from https://learn.microsoft.com/en-us/troubleshoot/sql/releases/sqlserver-2022/build-versions
-$DownloadUrl = 'https://download.microsoft.com/download/a89001cb-9c99-48d3-9f14-ded054b35fe4/SQLServer2022-KB5065865-x64.exe'
+$DownloadUrl = 'https://catalog.s.download.windowsupdate.com/d/msdownload/update/software/updt/2025/11/sqlserver2022-kb5068450-x64_70c032e1bd645698a0048c2cccb2e7f8faa1b8c7.exe'
 $DownloadPath = "$env:TEMP\SQLServer2022-CU.exe"
 $InstallArgs = '/qs /action=Patch /allinstances /IAcceptSQLServerLicenseTerms'
 
