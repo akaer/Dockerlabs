@@ -204,6 +204,7 @@ Write-Host '[+] Install global applications'
 Microsoft.Edit `
 7zip.7zip `
 Microsoft.DotNet.SDK.8 `
+Microsoft.DotNet.SDK.10 `
 Microsoft.PowerShell `
 Microsoft.Sysinternals.Suite `
 Notepad++.Notepad++ `

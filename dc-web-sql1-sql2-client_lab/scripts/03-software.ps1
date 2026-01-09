@@ -46,6 +46,7 @@ Write-Host '[+] Install global applications'
 Microsoft.Edit `
 7zip.7zip `
 Microsoft.DotNet.SDK.8 `
+Microsoft.DotNet.SDK.10 `
 Microsoft.PowerShell `
 Microsoft.Sysinternals.Suite `
 Notepad++.Notepad++ `
@@ -115,7 +116,7 @@ Install-WindowsFeature -Name `
 
 Write-Host '[+] Install DotNet Hosting bundle for IIS'
 & winget install --disable-interactivity --accept-package-agreements --accept-source-agreements --silent `
-    Microsoft.DotNet.HostingBundle.8 2>&1 | ForEach-Object {
+    Microsoft.DotNet.HostingBundle.8 Microsoft.DotNet.HostingBundle.10 2>&1 | ForEach-Object {
     $line = "$_"
     if ($line -match '^[\x21-\x7E]') {
          Write-Host $line

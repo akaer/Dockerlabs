@@ -54,7 +54,7 @@ function Get-SqlServerSetup {
         $sfxPath = "$mediaPath\SQL*ENU.exe"
         if (!(Test-Path $sfxPath)) {
             Write-Host '[-] Downloading SQL Server Setup...'
-            &$archivePath `
+            & $archivePath `
                 /ENU `
                 /LANGUAGE=en-US `
                 /ACTION=Download `
@@ -69,7 +69,7 @@ function Get-SqlServerSetup {
             }
         }
         Write-Host '[-] Extracting SQL Server Setup...'
-        &$sfxPath `
+        & $sfxPath `
             /Q `
             /X:"$(Split-Path -Parent $setupPath)" `
             /VERBOSE `
