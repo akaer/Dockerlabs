@@ -1,0 +1,89 @@
+services:
+
+  mailcatcher:
+    image: axllent/mailpit
+    restart: always
+    container_name: mailcatcher
+    hostname: mailpit
+    environment:
+      TZ: "Europe/Berlin"
+      MP_DATA_FILE: "/data/mailpit.db"
+    ports:
+      - 8000:8025
+      - 1025:1025
+    volumes:
+      - mailpit_data:/data
+    networks:
+      qslab:
+        ipv4_address: ${DOCKER_MAILCATCHER_IP}
+
+  db:
+    image: mssql-2022
+    build: db
+    restart: always
+    container_name: db
+    hostname: db
+    shm_size: 2g
+    environment:
+      TZ: Europe/Berlin
+      DATABASE_MEMORYLIMITMB: 8196
+    volumes:
+        - db_backup:/backups
+        - db_data:/var/opt/mssql
+    ports:
+        - "11433:1433"
+    networks:
+      qslab:
+        ipv4_address: ${DOCKER_DB_IP}
+
+  client:
+    image: dockurr/windows
+    restart: always
+    container_name: client
+    hostname: host-client
+    environment:
+      VERSION: "11e"
+      TZ: "Europe/Berlin"
+      DISK_SIZE: "64G"
+      CPU_CORES: "4"
+      RAM_SIZE: "12G"
+      LANGUAGE: "English"
+      REGION: "de-DE"
+      KEYBOARD: "de-DE"
+      USERNAME: "${LOCAL_ADMIN_ACCOUNT}"
+      PASSWORD: "${LOCAL_ADMIN_PASSWORD}"
+      HEIGHT: "1080"
+      WIDTH: "1920"
+      DEBUG: "Y"
+    devices:
+      - /dev/kvm
+    cap_add:
+      - NET_ADMIN
+    ports:
+      - 8001:8006
+      - 4001:3389/tcp
+      - 4001:3389/udp
+    volumes:
+      - client_data:/storage
+      - ./shared:/shared
+      - ./scripts:/oem
+      - ./ISOs/26200.6584.250915-1905.25h2_ge_release_svc_refresh_CLIENTENTERPRISEEVAL_OEMRET_x64FRE_en-us.iso:/boot.iso
+    stop_grace_period: 2m
+
+    networks:
+      qslab:
+        ipv4_address: ${DOCKER_CLIENT_IP}
+
+volumes:
+  db_backup:
+  db_data:
+  client_data:
+  mailpit_data:
+
+networks:
+  qslab:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: ${DOCKER_SUBNET}
+          gateway: ${DOCKER_GATEWAY}
