@@ -12,7 +12,7 @@ $ProgressPreference = 'SilentlyContinue'
 $DoneFile = [IO.Path]::ChangeExtension($PSCommandPath, '.done')
 if (Test-Path $DoneFile) {
     Write-Host "[!] File $PSCommandPath was already processed. Skip current run."
-    exit 
+    exit
 }
 
 # Load environment configuration
@@ -26,11 +26,6 @@ Write-Host '[+] Update WSL'
 
 Write-Host '[+] Set default wsl version'
 & wsl --set-default-version 2
-
-# Continue auto installation after reboot
-$KeyName = 'AutoInstall'
-$Command = 'cmd /C (powershell -ExecutionPolicy Unrestricted -noProfile -File "c:\OEM\configure.ps1")'
-New-ItemProperty -Path 'HKLM:\Software\Microsoft\Windows\CurrentVersion\RunOnce' -Name $KeyName -Value $Command -PropertyType ExpandString | Out-Null
 
 # Write marker
 'AlreadyProcessed' | Out-File "$DoneFile"

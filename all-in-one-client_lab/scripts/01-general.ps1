@@ -12,7 +12,7 @@ $ProgressPreference = 'SilentlyContinue'
 $DoneFile = [IO.Path]::ChangeExtension($PSCommandPath, '.done')
 if (Test-Path $DoneFile) {
     Write-Host "[!] File $PSCommandPath was already processed. Skip current run."
-    exit 
+    exit
 }
 
 $CustomTimeZone = 'W. Europe Standard Time'
@@ -80,7 +80,7 @@ Write-Host '[+] Enable UAC'
 New-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System' -Name 'EnableLUA' -Value '1' -PropertyType 'DWord' -Force | Out-Null
 
 Write-Host '[+] Share c:\temp folder'
-New-SmbShare -Name 'temp' -Path 'C:\temp' -ChangeAccess 'Everyone' | Out-Null
+New-SmbShare -Name 'Temp folder' -Path 'C:\temp' -ChangeAccess 'Everyone' -ErrorAction Continue | Out-Null
 
 Write-Host '[+] Updating NuGet provider to a version higher than 2.8.5.201.'
 Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force | Out-Null
