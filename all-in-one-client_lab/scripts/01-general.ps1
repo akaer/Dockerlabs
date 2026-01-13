@@ -4,7 +4,7 @@
 Set-StrictMode -Version Latest
 if ($env:DEBUG -eq 'True') { Set-PSDebug -Trace 1 }
 
-$ErrorActionPreference = 'Stop'
+$ErrorActionPreference = 'Continue'
 $InformationPreference = 'Continue'
 $DebugPreference = 'SilentlyContinue'
 $ProgressPreference = 'SilentlyContinue'
@@ -65,7 +65,7 @@ Write-Host '[+] Do not write last access time'
     Write-Host "$_"
 }
 if ($LASTEXITCODE -ne 0) {
-    throw "fsutil failed with exit code $LASTEXITCODE"
+    Write-Warning "[!] FSUtil failed with exit code $LASTEXITCODE"
 }
 
 Write-Host '[+] Allow response to Ping'
@@ -79,18 +79,30 @@ New-NetFirewallRule -DisplayName 'ICMP Allow incoming V4 echo request' `
 Write-Host '[+] Enable UAC'
 New-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System' -Name 'EnableLUA' -Value '1' -PropertyType 'DWord' -Force | Out-Null
 
-Write-Host '[+] Share c:\temp folder'
-New-SmbShare -Name 'Temp folder' -Path 'C:\temp' -ChangeAccess 'Everyone' -ErrorAction Continue | Out-Null
+try {
+    Write-Host '[+] Updating NuGet provider to a version higher than 2.8.5.201.'
+    Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force | Out-Null
 
-Write-Host '[+] Updating NuGet provider to a version higher than 2.8.5.201.'
-Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force | Out-Null
+    Write-Host '[+] Specify the installation policy'
+    Set-PSRepository -InstallationPolicy Trusted -Name PSGallery
 
-Write-Host '[+] Specify the installation policy'
-Set-PSRepository -InstallationPolicy Trusted -Name PSGallery
+    Write-Host '[+] Update WinGet client'
+    Install-Module -Name Microsoft.WinGet.Client -Force -Repository PSGallery -Scope AllUsers | Out-Null
+    Repair-WinGetPackageManager -Force -Latest
 
-Write-Host '[+] Update Winget client'
-Install-Module -Name Microsoft.WinGet.Client -Force -Repository PSGallery -Scope AllUsers | Out-Null
-Repair-WinGetPackageManager -Force -Latest
+    Write-Host '[+] Update WinGet sources'
+    & winget source update --disable-interactivity 2>&1 | ForEach-Object {
+        $line = "$_"
+        if ($line -match '^[\x21-\x7E]') {
+             Write-Host $line
+        }
+    }
+    if ($LASTEXITCODE -ne 0) {
+        Write-Warning "[!] winget source update completed with exit code $LASTEXITCODE"
+    }
+} catch {
+    Write-Warning "[!] Failures during : $_"
+}
 
 Write-Host '[+] Installing PowerShellGet'
 Install-Module -Name PowerShellGet -Force -Scope AllUsers
@@ -149,6 +161,9 @@ New-ItemProperty -Path 'HKCU:\Software\Microsoft\Internet Explorer\Main' -Name '
 Write-Host '[+] Disabling Screensaver'
 New-ItemProperty -Path 'HKCU:\Control Panel\Desktop' -Name 'ScreenSaveActive' -Value '0' -PropertyType 'DWord' -Force | Out-Null
 
+Write-Host '[+] Share c:\temp folder'
+New-SmbShare -Name 'Temp folder' -Path 'C:\temp' -ChangeAccess 'Everyone' -ErrorAction Continue | Out-Null
+
 Write-Host '[+] Add permanent environment variables to disable telemetry'
 [System.Environment]::SetEnvironmentVariable('DOTNET_CLI_TELEMETRY_OPTOUT','1', 'Machine')
 [System.Environment]::SetEnvironmentVariable('DOTNET_EnableDiagnostics','0', 'Machine')
@@ -157,6 +172,31 @@ Write-Host '[+] Add permanent environment variables to disable telemetry'
 [System.Environment]::SetEnvironmentVariable('POWERSHELL_TELEMETRY_OPTOUT','1', 'Machine')
 [System.Environment]::SetEnvironmentVariable('POWERSHELL_UPDATECHECK','Off', 'Machine')
 [System.Environment]::SetEnvironmentVariable('POWERSHELL_UPDATECHECK_OPTOUT','1', 'Machine')
+[System.Environment]::SetEnvironmentVariable('DOTNET_NOLOGO','true', 'Machine')
+
+Write-Host '[+] Set registry to accept SysInternals license agreement'
+
+# HKEY_LOCAL_MACHINE
+$sysinternalsRegPath = 'HKLM:\SOFTWARE\Sysinternals'
+if (-not (Test-Path $sysinternalsRegPath)) {
+    New-Item -Path $sysinternalsRegPath -Force | Out-Null
+}
+Set-ItemProperty -Path $sysinternalsRegPath -Name 'EulaAccepted' -Value 1 -Type DWord -Force | Out-Null
+
+# HKEY_CURRENT_USER
+$sysinternalsRegPath = 'HKCU:\Software\Sysinternals'
+if (-not (Test-Path $sysinternalsRegPath)) {
+    New-Item -Path $sysinternalsRegPath -Force | Out-Null
+}
+Set-ItemProperty -Path $sysinternalsRegPath -Name 'EulaAccepted' -Value 1 -Type DWord -Force | Out-Null
+
+# HKU\.DEFAULT (requires mounting the hive or using New-PSDrive)
+New-PSDrive -PSProvider Registry -Name HKU -Root HKEY_USERS -ErrorAction SilentlyContinue | Out-Null
+$sysinternalsRegPath = 'HKU: \.DEFAULT\Software\Sysinternals'
+if (-not (Test-Path $sysinternalsRegPath)) {
+    New-Item -Path $sysinternalsRegPath -Force | Out-Null
+}
+Set-ItemProperty -Path $sysinternalsRegPath -Name 'EulaAccepted' -Value 1 -Type DWord -Force | Out-Null
 
 $TargetScript = 'c:\OEM\user-profile.ps1'
 if (Test-Path "$TargetScript") {
@@ -167,17 +207,6 @@ if (Test-Path "$TargetScript") {
     $shortcut.TargetPath = $SourceFilePath
     $shortcut.Arguments = "-NoProfile -ExecutionPolicy bypass -File $TargetScript"
     $shortcut.Save()
-}
-
-Write-Host '[+] Update winget sources'
-& winget source update --disable-interactivity 2>&1 | ForEach-Object {
-    $line = "$_"
-    if ($line -match '^[\x21-\x7E]') {
-         Write-Host $line
-    }
-}
-if ($LASTEXITCODE -ne 0) {
-    Write-Warning "[!] winget source update completed with exit code $LASTEXITCODE"
 }
 
 # Write marker
