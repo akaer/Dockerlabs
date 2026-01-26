@@ -10,7 +10,7 @@ $ProgressPreference = 'SilentlyContinue'
 $DoneFile = [IO.Path]::ChangeExtension($PSCommandPath, '.done')
 if (Test-Path $DoneFile) {
     Write-Host "[!] File $PSCommandPath was already processed. Skip current run."
-    exit 
+    exit
 }
 
 # Load environment configuration
