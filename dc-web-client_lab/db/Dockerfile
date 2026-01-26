@@ -57,12 +57,6 @@ RUN set -xe \
         sqlcmd \
         unzip \
     && rm -rf /var/lib/apt/lists/* \
-    && mkdir -p /opt/sqlpackage \
-    && curl -sSLO https://aka.ms/sqlpackage-linux \
-    && unzip sqlpackage-linux -d /opt/sqlpackage/ \
-    && rm sqlpackage-linux \
-    && chmod 777 /opt/sqlpackage/sqlpackage /tmp/*.sh \
-    && ln -s /opt/sqlpackage/sqlpackage /usr/bin/sqlpackage \
     && mkdir -p /backups \
     && chown mssql /backups /var/opt/mssql/data/mssql.crt /var/opt/mssql/data/mssql.key
 
