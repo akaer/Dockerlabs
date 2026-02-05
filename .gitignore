@@ -7,5 +7,5 @@
 *.exe
 *.der
 env.ps1
-3-machine-lab/scripts/certs/
+*/scripts/certs/
 */shared/
