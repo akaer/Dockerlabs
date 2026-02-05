@@ -1,0 +1,53 @@
+services:
+
+  dc:
+    image: dockurr/windows
+    restart: always
+    container_name: dc
+    hostname: host-dc
+    environment:
+      VERSION: "2025"
+      TZ: "Europe/Berlin"
+      DISK_SIZE: "64G"
+      CPU_CORES: "2"
+      RAM_SIZE: "4G"
+      LANGUAGE: "English"
+      REGION: "de-DE"
+      KEYBOARD: "de-DE"
+      USERNAME: "${LOCAL_ADMIN_ACCOUNT}"
+      PASSWORD: "${LOCAL_ADMIN_PASSWORD}"
+      HEIGHT: "1080"
+      WIDTH: "1920"
+      DEBUG: "Y"
+      ARGUMENTS: "-netdev vde,id=net0,sock=/tmp/vde_switch.sock -device virtio-net-pci,netdev=net0,mac=${DC_NETWORK_MAC},romfile="
+    devices:
+      - /dev/kvm
+    cap_add:
+      - NET_ADMIN
+    ports:
+      - 8002:8006
+      - 4002:3389/tcp
+      - 4002:3389/udp
+      - 5001:1880/tcp
+      - 5002:2880/tcp
+    volumes:
+      - /tmp/vde_switch.sock:/tmp/vde_switch.sock
+      - dc_data:/storage
+      - ./shared:/shared
+      - ./scripts:/oem
+      - ./ISOs/26100.1742.240906-0331.ge_release_svc_refresh_SERVER_EVAL_x64FRE_en-us.iso:/boot.iso
+    stop_grace_period: 2m
+    networks:
+      qslab:
+        ipv4_address: ${DOCKER_DC_IP}
+
+volumes:
+  dc_data:
+
+networks:
+  qslab:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: ${DOCKER_SUBNET}
+          gateway: ${DOCKER_GATEWAY}
