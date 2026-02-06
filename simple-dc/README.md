@@ -24,8 +24,8 @@ A containerized Active Directory (AD) test lab built with Docker and Windows Ser
 
 This project deploys a self-contained Windows Server 2025 Domain Controller in a Docker container with a fully configured Active Directory forest. The lab includes pre-configured service accounts, domain users, DNS, certificate infrastructure, and common development tools.
 
-**Domain:** `qs-lab.local` (NetBIOS: `QS-LAB`)  
-**Forest Mode:** Windows Server 2025  
+**Domain:** `qs-lab.local` (NetBIOS: `QS-LAB`)
+**Forest Mode:** Windows Server 2025
 **Domain Mode:** Windows Server 2025
 
 ## Project Structure
@@ -75,10 +75,10 @@ simple-dc/
 
 ### Installation
 
-Install required tools on Ubuntu/Debian:
+Install required tools (beside docker) on Ubuntu/Debian:
 ```bash
 sudo apt-get update
-sudo apt-get install -y docker.io docker-compose unix2dos inotify-tools vde2
+sudo apt-get install -y dos2unix inotify-tools vde2
 ```
 
 ## Quick Start
@@ -226,7 +226,7 @@ DOCKER_SUBNET=172.42.0.0/16
 | `mandyc` | Mandy Cn |
 | `peggyd` | Peggy Dn |
 
-All domain users have password: `P@ssw0rd`  
+All domain users have password: `P@ssw0rd`
 All passwords are set to never expire for lab purposes.
 
 ### Group Managed Service Accounts (gMSA)
