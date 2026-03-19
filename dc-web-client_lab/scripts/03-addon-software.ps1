@@ -18,15 +18,15 @@ if (Test-Path $EnvFile) {
 if ('CLIENT' -eq "$env:COMPUTERNAME") {
 
     Write-Host '[+] Install additional client packages'
-    & winget install --disable-interactivity --accept-package-agreements --accept-source-agreements --silent `
-        dnSpyEx.dnSpy `
+    & winget install --disable-interactivity --accept-package-agreements --accept-source-agreements --silent -e --source winget `
+        icsharpcode.ILSpy `
         Microsoft.VisualStudioCode `
         Microsoft.SQLServerManagementStudio `
         Flameshot.Flameshot `
         Mozilla.Firefox.ESR `
         WinMerge.WinMerge `
         Softerra.LDAPBrowser `
-        2>&1 | ForEach-Object {
+    2>&1 | ForEach-Object {
             $line = "$_"
             if ($line -match '^[\x21-\x7E]') {
                  Write-Host $line
@@ -47,7 +47,7 @@ if ('WEB' -ne "$env:COMPUTERNAME") {
 Write-Host '[+] Install IIS'
 Import-Module ServerManager
 Install-WindowsFeature -Name `
-    Web-WebServer `
+     Web-WebServer `
     ,Web-ASP `
     ,Web-Asp-Net45 `
     ,Web-Basic-Auth `
@@ -63,8 +63,10 @@ Install-WindowsFeature -Name `
     -IncludeManagementTools
 
 Write-Host '[+] Install DotNet Hosting bundle for IIS'
-& winget install --disable-interactivity --accept-package-agreements --accept-source-agreements --silent `
-    Microsoft.DotNet.HostingBundle.8 Microsoft.DotNet.HostingBundle.10 2>&1 | ForEach-Object {
+& winget install --disable-interactivity --accept-package-agreements --accept-source-agreements --silent -e --source winget `
+    Microsoft.DotNet.HostingBundle.8 `
+    Microsoft.DotNet.HostingBundle.10 `
+2>&1 | ForEach-Object {
     $line = "$_"
     if ($line -match '^[\x21-\x7E]') {
          Write-Host $line

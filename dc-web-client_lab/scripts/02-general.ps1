@@ -200,14 +200,15 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 Write-Host '[+] Install global applications'
-& winget install --disable-interactivity --accept-package-agreements --accept-source-agreements --silent `
-Microsoft.Edit `
-7zip.7zip `
-Microsoft.DotNet.SDK.8 `
-Microsoft.DotNet.SDK.10 `
-Microsoft.PowerShell `
-Microsoft.Sysinternals.Suite `
-Notepad++.Notepad++ `
+& winget install --disable-interactivity --accept-package-agreements --accept-source-agreements --silent -e --source winget `
+    Microsoft.Edit `
+    7zip.7zip `
+    Microsoft.DotNet.SDK.8 `
+    Microsoft.DotNet.SDK.10 `
+    Microsoft.PowerShell `
+    Microsoft.Sysinternals.BGInfo `
+    Microsoft.Sysinternals.Suite `
+    Notepad++.Notepad++ `
 2>&1 | ForEach-Object {
     $line = "$_"
     if ($line -match '^[\x21-\x7E]') {
