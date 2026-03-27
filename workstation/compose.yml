@@ -1,0 +1,38 @@
+services:
+  windows:
+    image: dockurr/windows
+    container_name: workstation
+    environment:
+      VERSION: "11"
+      TZ: "Europe/Berlin"
+      DISK_SIZE: "64G"
+      CPU_CORES: "2"
+      RAM_SIZE: "12G"
+      LANGUAGE: "English"
+      REGION: "de-DE"
+      KEYBOARD: "de-DE"
+      USERNAME: "${LOCAL_ADMIN_ACCOUNT}"
+      PASSWORD: "${LOCAL_ADMIN_PASSWORD}"
+      HEIGHT: "1080"
+      WIDTH: "1920"
+      DEBUG: "Y"
+    devices:
+      - /dev/kvm
+      - /dev/net/tun
+    cap_add:
+      - NET_ADMIN
+    ports:
+      - 8006:8006
+      - 3389:3389/tcp
+      - 3389:3389/udp
+    volumes:
+      - data:/storage
+      - ./shared:/shared
+      - ./scripts:/oem
+      - ./ISOs/26200.6584.250915-1905.25h2_ge_release_svc_refresh_CLIENTENTERPRISEEVAL_OEMRET_x64FRE_en-us.iso:/boot.iso
+    restart: always
+    stop_grace_period: 2m
+
+volumes:
+  data:
+
