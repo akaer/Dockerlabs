@@ -17,6 +17,50 @@ if (Test-Path $DoneFile) {
 
 $CustomTimeZone = 'W. Europe Standard Time'
 
+function Test-Winget {
+    param(
+        [int]$Retries = 5,
+        [int]$Delay = 15
+    )
+
+    Write-Host '[+] Verify winget is working as expected'
+
+    $ErrorActionPreference = 'Continue'
+    for ($i = 1; $i -le $Retries; $i++) {
+        Write-Host "[-] Attempt $i/$Retries..."
+
+        try {
+            Write-Host '[-] Winget info:'
+            $info = winget --info 2>&1
+
+            if ($LASTEXITCODE -eq 0) {
+                $info
+            }
+
+            Write-Host '[-] Winget sources:'
+            $info = winget source list 2>&1
+
+            if ($LASTEXITCODE -eq 0) {
+                $info
+            }
+
+            return $true
+        }
+        catch {
+            Write-Warning $_.Exception.Message
+        }
+
+        if ($i -lt $Retries) {
+            Start-Sleep -Seconds $Delay
+        }
+    }
+
+    Write-Error "[!] Winget verification failed after $Retries attempts"
+
+    $ErrorActionPreference = 'Stop'
+    return $false
+}
+
 Write-Host '[+] Configure defender'
 Set-MpPreference -DisableRealtimeMonitoring $true
 Set-MpPreference -DisableBehaviorMonitoring $true
@@ -79,30 +123,11 @@ New-NetFirewallRule -DisplayName 'ICMP Allow incoming V4 echo request' `
 Write-Host '[+] Enable UAC'
 New-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System' -Name 'EnableLUA' -Value '1' -PropertyType 'DWord' -Force | Out-Null
 
-try {
-    Write-Host '[+] Updating NuGet provider to a version higher than 2.8.5.201.'
-    Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force | Out-Null
+Write-Host '[+] Updating NuGet provider to a version higher than 2.8.5.201.'
+Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force | Out-Null
 
-    Write-Host '[+] Specify the installation policy'
-    Set-PSRepository -InstallationPolicy Trusted -Name PSGallery
-
-    Write-Host '[+] Update WinGet client'
-    Install-Module -Name Microsoft.WinGet.Client -Force -Repository PSGallery -Scope AllUsers | Out-Null
-    Repair-WinGetPackageManager -Force -Latest
-
-    Write-Host '[+] Update WinGet sources'
-    & winget source update --disable-interactivity 2>&1 | ForEach-Object {
-        $line = "$_"
-        if ($line -match '^[\x21-\x7E]') {
-             Write-Host $line
-        }
-    }
-    if ($LASTEXITCODE -ne 0) {
-        Write-Warning "[!] winget source update completed with exit code $LASTEXITCODE"
-    }
-} catch {
-    Write-Warning "[!] Failures during : $_"
-}
+Write-Host '[+] Specify the installation policy'
+Set-PSRepository -InstallationPolicy Trusted -Name PSGallery
 
 Write-Host '[+] Installing PowerShellGet'
 Install-Module -Name PowerShellGet -Force -Scope AllUsers
@@ -168,11 +193,40 @@ Write-Host '[+] Add permanent environment variables to disable telemetry'
 [System.Environment]::SetEnvironmentVariable('DOTNET_CLI_TELEMETRY_OPTOUT','1', 'Machine')
 [System.Environment]::SetEnvironmentVariable('DOTNET_EnableDiagnostics','0', 'Machine')
 [System.Environment]::SetEnvironmentVariable('DOTNET_TELEMETRY_OPTOUT','1', 'Machine')
+[System.Environment]::SetEnvironmentVariable('DOTNET_NOLOGO','true', 'Machine')
 [System.Environment]::SetEnvironmentVariable('POWERSHELL_CLI_TELEMETRY_OPTOUT','1', 'Machine')
 [System.Environment]::SetEnvironmentVariable('POWERSHELL_TELEMETRY_OPTOUT','1', 'Machine')
 [System.Environment]::SetEnvironmentVariable('POWERSHELL_UPDATECHECK','Off', 'Machine')
 [System.Environment]::SetEnvironmentVariable('POWERSHELL_UPDATECHECK_OPTOUT','1', 'Machine')
-[System.Environment]::SetEnvironmentVariable('DOTNET_NOLOGO','true', 'Machine')
+
+if (Test-Winget) {
+
+    # Next line might be needed to fix some issue with winget not found after a fresh install of Windows 11
+    #Add-AppxPackage -RegisterByFamilyName -MainPackage Microsoft.DesktopAppInstaller_8wekyb3d8bbwe
+
+    Write-Host '[+] Update winget sources'
+    & winget source reset --force
+    & winget source update 2>&1 | ForEach-Object {
+        $line = "$_"
+        if ($line -match '^[\x21-\x7E]') {
+            Write-Host $line
+        }
+    }
+    if ($LASTEXITCODE -ne 0) {
+        Write-Warning "[!] winget source update completed with exit code $LASTEXITCODE"
+    }
+
+    Write-Host '[+] Upgrade all base apps'
+    & winget upgrade --all --disable-interactivity --accept-package-agreements --accept-source-agreements --silent -e --source winget 2>&1 | ForEach-Object {
+        $line = "$_"
+        if ($line -match '^[\x21-\x7E]') {
+            Write-Host $line
+        }
+    }
+    if ($LASTEXITCODE -ne 0) {
+        Write-Warning "[!] winget source update completed with exit code $LASTEXITCODE"
+    }
+}
 
 Write-Host '[+] Set registry to accept SysInternals license agreement'
 

@@ -178,6 +178,7 @@ Write-Host '[+] Add permanent environment variables to disable telemetry'
 [System.Environment]::SetEnvironmentVariable('DOTNET_CLI_TELEMETRY_OPTOUT','1', 'Machine')
 [System.Environment]::SetEnvironmentVariable('DOTNET_EnableDiagnostics','0', 'Machine')
 [System.Environment]::SetEnvironmentVariable('DOTNET_TELEMETRY_OPTOUT','1', 'Machine')
+[System.Environment]::SetEnvironmentVariable('DOTNET_NOLOGO','true', 'Machine')
 [System.Environment]::SetEnvironmentVariable('POWERSHELL_CLI_TELEMETRY_OPTOUT','1', 'Machine')
 [System.Environment]::SetEnvironmentVariable('POWERSHELL_TELEMETRY_OPTOUT','1', 'Machine')
 [System.Environment]::SetEnvironmentVariable('POWERSHELL_UPDATECHECK','Off', 'Machine')

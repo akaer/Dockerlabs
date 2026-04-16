@@ -42,7 +42,7 @@ function Register-BGInfoStartup {
 }
 
 Write-Host '[+] Install global applications'
-& winget install --disable-interactivity --accept-package-agreements --accept-source-agreements --silent `
+& winget install --disable-interactivity --accept-package-agreements --accept-source-agreements --silent -e --source winget `
 7zip.7zip `
 dnSpyEx.dnSpy `
 Flameshot.Flameshot `
