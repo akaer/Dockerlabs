@@ -42,7 +42,7 @@ function Register-BGInfoStartup {
 }
 
 Write-Host '[+] Install global applications'
-& C:\Users\admn\AppData\Local\Microsoft\WindowsApps\winget.exe install --accept-package-agreements --accept-source-agreements --silent `
+& C:\Users\admn\AppData\Local\Microsoft\WindowsApps\winget.exe install --accept-package-agreements --accept-source-agreements --silent -e --source winget `
 Microsoft.Edit `
 7zip.7zip `
 Microsoft.DotNet.SDK.8 `
@@ -65,10 +65,10 @@ Register-BGInfoStartup
 if ('CLIENT' -eq "$env:COMPUTERNAME") {
 
     Write-Host '[+] Install additional client packages'
-    & winget install --disable-interactivity --accept-package-agreements --accept-source-agreements --silent `
+    & winget install --disable-interactivity --accept-package-agreements --accept-source-agreements --silent -e --source winget `
         dnSpyEx.dnSpy `
         Microsoft.VisualStudioCode `
-        Microsoft.SQLServerManagementStudio `
+        Microsoft.SQLServerManagementStudio.22 `
         Flameshot.Flameshot `
         Mozilla.Firefox.ESR `
         WinMerge.WinMerge `
@@ -115,7 +115,7 @@ Install-WindowsFeature -Name `
     -IncludeManagementTools
 
 Write-Host '[+] Install DotNet Hosting bundle for IIS'
-& winget install --disable-interactivity --accept-package-agreements --accept-source-agreements --silent `
+& winget install --disable-interactivity --accept-package-agreements --accept-source-agreements --silent -e --source winget `
     Microsoft.DotNet.HostingBundle.8 Microsoft.DotNet.HostingBundle.10 2>&1 | ForEach-Object {
     $line = "$_"
     if ($line -match '^[\x21-\x7E]') {

@@ -210,6 +210,7 @@ if (Test-Path "$TargetScript") {
 
 if (Test-Winget) {
     Write-Host '[+] Update winget sources'
+    & winget source reset --force
     & winget source update 2>&1 | ForEach-Object {
         $line = "$_"
         if ($line -match '^[\x21-\x7E]') {
@@ -221,7 +222,7 @@ if (Test-Winget) {
     }
 
     Write-Host '[+] Upgrade all base apps'
-    & winget upgrade --all --disable-interactivity --accept-package-agreements --accept-source-agreements 2>&1 | ForEach-Object {
+    & winget upgrade --all --disable-interactivity --accept-package-agreements --accept-source-agreements --silent -e --source winget 2>&1 | ForEach-Object {
         $line = "$_"
         if ($line -match '^[\x21-\x7E]') {
             Write-Host $line
