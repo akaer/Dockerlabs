@@ -42,7 +42,7 @@ function Register-BGInfoStartup {
 }
 
 Write-Host '[+] Install global applications'
-& C:\Users\admn\AppData\Local\Microsoft\WindowsApps\winget.exe install --accept-package-agreements --accept-source-agreements --silent -e --source winget `
+& winget install --disable-interactivity --accept-package-agreements --accept-source-agreements --silent -e --source winget `
 Microsoft.Edit `
 7zip.7zip `
 Microsoft.DotNet.SDK.8 `
@@ -125,4 +125,3 @@ Write-Host '[+] Install DotNet Hosting bundle for IIS'
 if ($LASTEXITCODE -ne 0) {
     Write-Warning "[!] winget install completed with exit code $LASTEXITCODE"
 }
-

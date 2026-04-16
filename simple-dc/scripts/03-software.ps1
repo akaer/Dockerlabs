@@ -56,4 +56,3 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 Register-BGInfoStartup
-

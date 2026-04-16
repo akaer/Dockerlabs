@@ -13,6 +13,50 @@ Rename-Computer -NewName 'workstation' -Force
 
 $CustomTimeZone = 'W. Europe Standard Time'
 
+function Test-Winget {
+    param(
+        [int]$Retries = 5,
+        [int]$Delay = 15
+    )
+
+    Write-Host '[+] Verify winget is working as expected'
+
+    $ErrorActionPreference = 'Continue'
+    for ($i = 1; $i -le $Retries; $i++) {
+        Write-Host "[-] Attempt $i/$Retries..."
+
+        try {
+            Write-Host '[-] Winget info:'
+            $info = winget --info 2>&1
+
+            if ($LASTEXITCODE -eq 0) {
+                $info
+            }
+
+            Write-Host '[-] Winget sources:'
+            $info = winget source list 2>&1
+
+            if ($LASTEXITCODE -eq 0) {
+                $info
+            }
+
+            return $true
+        }
+        catch {
+            Write-Warning $_.Exception.Message
+        }
+
+        if ($i -lt $Retries) {
+            Start-Sleep -Seconds $Delay
+        }
+    }
+
+    Write-Error "[!] Winget verification failed after $Retries attempts"
+
+    $ErrorActionPreference = 'Stop'
+    return $false
+}
+
 Write-Host '[+] Configure defender'
 Set-MpPreference -DisableRealtimeMonitoring $true
 Set-MpPreference -DisableBehaviorMonitoring $true
@@ -150,4 +194,33 @@ if (Test-Path "$TargetScript") {
     $shortcut.TargetPath = $SourceFilePath
     $shortcut.Arguments = "-NoProfile -ExecutionPolicy bypass -File $TargetScript"
     $shortcut.Save()
+}
+
+if (Test-Winget) {
+
+    # Next line might be needed to fix some issue with winget not found after a fresh install of Windows 11
+    #Add-AppxPackage -RegisterByFamilyName -MainPackage Microsoft.DesktopAppInstaller_8wekyb3d8bbwe
+
+    Write-Host '[+] Update winget sources'
+    & winget source reset --force
+    & winget source update 2>&1 | ForEach-Object {
+        $line = "$_"
+        if ($line -match '^[\x21-\x7E]') {
+            Write-Host $line
+        }
+    }
+    if ($LASTEXITCODE -ne 0) {
+        Write-Warning "[!] winget source update completed with exit code $LASTEXITCODE"
+    }
+
+    Write-Host '[+] Upgrade all base apps'
+    & winget upgrade --all --disable-interactivity --accept-package-agreements --accept-source-agreements --silent -e --source winget 2>&1 | ForEach-Object {
+        $line = "$_"
+        if ($line -match '^[\x21-\x7E]') {
+            Write-Host $line
+        }
+    }
+    if ($LASTEXITCODE -ne 0) {
+        Write-Warning "[!] winget source update completed with exit code $LASTEXITCODE"
+    }
 }

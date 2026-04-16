@@ -36,10 +36,7 @@ function Register-BGInfoStartup {
 }
 
 Write-Host '[+] Install global applications'
-# Next line might be needed to fix some issue with winget not found after a fresh install of Windows 11
-Add-AppxPackage -RegisterByFamilyName -MainPackage Microsoft.DesktopAppInstaller_8wekyb3d8bbwe
-& winget source reset --force
-& winget source update
+
 & winget install --disable-interactivity --accept-package-agreements --accept-source-agreements --silent -e --source winget `
 Microsoft.Edit `
 7zip.7zip `
@@ -66,4 +63,3 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 Register-BGInfoStartup
-
