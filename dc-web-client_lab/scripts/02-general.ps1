@@ -11,6 +11,50 @@ $ProgressPreference = 'SilentlyContinue'
 
 $CustomTimeZone = 'W. Europe Standard Time'
 
+function Test-Winget {
+    param(
+        [int]$Retries = 5,
+        [int]$Delay = 15
+    )
+
+    Write-Host '[+] Verify winget is working as expected'
+
+    $ErrorActionPreference = 'Continue'
+    for ($i = 1; $i -le $Retries; $i++) {
+        Write-Host "[-] Attempt $i/$Retries..."
+
+        try {
+            Write-Host '[-] Winget info:'
+            $info = winget --info 2>&1
+
+            if ($LASTEXITCODE -eq 0) {
+                $info
+            }
+
+            Write-Host '[-] Winget sources:'
+            $info = winget source list 2>&1
+
+            if ($LASTEXITCODE -eq 0) {
+                $info
+            }
+
+            return $true
+        }
+        catch {
+            Write-Warning $_.Exception.Message
+        }
+
+        if ($i -lt $Retries) {
+            Start-Sleep -Seconds $Delay
+        }
+    }
+
+    Write-Error "[!] Winget verification failed after $Retries attempts"
+
+    $ErrorActionPreference = 'Stop'
+    return $false
+}
+
 function Register-BGInfoStartup {
 
         $bgInfo = Get-ChildItem -Path "$env:LocalAppData" -Filter 'BGInfo64.exe' -Recurse -Attributes !ReparsePoint
@@ -188,35 +232,49 @@ if (Test-Path "$TargetScript") {
     $shortcut.Save()
 }
 
-Write-Host '[+] Update winget sources'
-& winget source update --disable-interactivity 2>&1 | ForEach-Object {
-    $line = "$_"
-    if ($line -match '^[\x21-\x7E]') {
-         Write-Host $line
+if (Test-Winget) {
+    Write-Host '[+] Update winget sources'
+    & winget source reset --force
+    & winget source update 2>&1 | ForEach-Object {
+        $line = "$_"
+        if ($line -match '^[\x21-\x7E]') {
+            Write-Host $line
+        }
     }
-}
-if ($LASTEXITCODE -ne 0) {
-    Write-Warning "[!] winget source update completed with exit code $LASTEXITCODE"
-}
+    if ($LASTEXITCODE -ne 0) {
+        Write-Warning "[!] winget source update completed with exit code $LASTEXITCODE"
+    }
 
-Write-Host '[+] Install global applications'
-& winget install --disable-interactivity --accept-package-agreements --accept-source-agreements --silent -e --source winget `
-    Microsoft.Edit `
-    7zip.7zip `
-    Microsoft.DotNet.SDK.8 `
-    Microsoft.DotNet.SDK.10 `
-    Microsoft.PowerShell `
-    Microsoft.Sysinternals.BGInfo `
-    Microsoft.Sysinternals.Suite `
-    Notepad++.Notepad++ `
-2>&1 | ForEach-Object {
-    $line = "$_"
-    if ($line -match '^[\x21-\x7E]') {
-         Write-Host $line
+    Write-Host '[+] Upgrade all base apps'
+    & winget upgrade --all --disable-interactivity --accept-package-agreements --accept-source-agreements --silent -e --source winget 2>&1 | ForEach-Object {
+        $line = "$_"
+        if ($line -match '^[\x21-\x7E]') {
+            Write-Host $line
+        }
     }
-}
-if ($LASTEXITCODE -ne 0) {
-    Write-Warning "[!] winget install completed with exit code $LASTEXITCODE"
+    if ($LASTEXITCODE -ne 0) {
+        Write-Warning "[!] winget source update completed with exit code $LASTEXITCODE"
+    }
+
+    Write-Host '[+] Install global applications'
+    & winget install --disable-interactivity --accept-package-agreements --accept-source-agreements --silent -e --source winget `
+        Microsoft.Edit `
+        7zip.7zip `
+        Microsoft.DotNet.SDK.8 `
+        Microsoft.DotNet.SDK.10 `
+        Microsoft.PowerShell `
+        Microsoft.Sysinternals.BGInfo `
+        Microsoft.Sysinternals.Suite `
+        Notepad++.Notepad++ `
+    2>&1 | ForEach-Object {
+        $line = "$_"
+        if ($line -match '^[\x21-\x7E]') {
+            Write-Host $line
+        }
+    }
+    if ($LASTEXITCODE -ne 0) {
+        Write-Warning "[!] winget install completed with exit code $LASTEXITCODE"
+    }
 }
 
 Register-BGInfoStartup
