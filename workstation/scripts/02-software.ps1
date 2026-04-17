@@ -48,7 +48,7 @@ Microsoft.Sysinternals.Suite `
 Notepad++.Notepad++ `
 dnSpyEx.dnSpy `
 Microsoft.VisualStudioCode `
-Microsoft.SQLServerManagementStudio `
+Microsoft.Microsoft.SQLServerManagementStudio.22 `
 Flameshot.Flameshot `
 Mozilla.Firefox.ESR `
 WinMerge.WinMerge `

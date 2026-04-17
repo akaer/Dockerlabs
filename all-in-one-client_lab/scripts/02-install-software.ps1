@@ -50,7 +50,7 @@ Microsoft.DotNet.SDK.10 `
 Microsoft.DotNet.SDK.8 `
 Microsoft.Edit `
 Microsoft.PowerShell `
-Microsoft.SQLServerManagementStudio `
+Microsoft.Microsoft.SQLServerManagementStudio.22 `
 Microsoft.Sysinternals.Suite `
 Microsoft.VisualStudioCode `
 Mozilla.Firefox.ESR `

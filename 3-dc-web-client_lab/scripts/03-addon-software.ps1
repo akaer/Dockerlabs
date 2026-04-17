@@ -18,10 +18,10 @@ if (Test-Path $EnvFile) {
 if ('CLIENT' -eq "$env:COMPUTERNAME") {
 
     Write-Host '[+] Install additional client packages'
-    & winget install --disable-interactivity --accept-package-agreements --accept-source-agreements --silent `
+    & winget install --disable-interactivity --accept-package-agreements --accept-source-agreements --silent -e --source winget `
         dnSpyEx.dnSpy `
         Microsoft.VisualStudioCode `
-        Microsoft.SQLServerManagementStudio `
+        Microsoft.Microsoft.SQLServerManagementStudio.22 `
         Flameshot.Flameshot `
         Mozilla.Firefox.ESR `
         WinMerge.WinMerge `
@@ -63,8 +63,10 @@ Install-WindowsFeature -Name `
     -IncludeManagementTools
 
 Write-Host '[+] Install DotNet Hosting bundle for IIS'
-& winget install --disable-interactivity --accept-package-agreements --accept-source-agreements --silent `
-    Microsoft.DotNet.HostingBundle.8 Microsoft.DotNet.HostingBundle.10 2>&1 | ForEach-Object {
+& winget install --disable-interactivity --accept-package-agreements --accept-source-agreements --silent -e --source winget `
+    Microsoft.DotNet.HostingBundle.8 `
+    Microsoft.DotNet.HostingBundle.10 `
+    2>&1 | ForEach-Object {
     $line = "$_"
     if ($line -match '^[\x21-\x7E]') {
          Write-Host $line

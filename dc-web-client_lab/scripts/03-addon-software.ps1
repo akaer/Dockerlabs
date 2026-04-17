@@ -21,7 +21,7 @@ if ('CLIENT' -eq "$env:COMPUTERNAME") {
     & winget install --disable-interactivity --accept-package-agreements --accept-source-agreements --silent -e --source winget `
         icsharpcode.ILSpy `
         Microsoft.VisualStudioCode `
-        Microsoft.SQLServerManagementStudio `
+        Microsoft.Microsoft.SQLServerManagementStudio.22 `
         Flameshot.Flameshot `
         Mozilla.Firefox.ESR `
         WinMerge.WinMerge `
